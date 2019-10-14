@@ -16,6 +16,10 @@ bot = Discordrb::Bot.new(
   config.access_token_secret = ENV['TWITTER_ACCESS_TOKEN_SECRET']
 end
 
+bot.ready do
+  bot.game = 'Twitter'
+end
+
 bot.message do |event|
   content = event.message.content
   m = content.match(/https:\/\/twitter.com\/([a-zA-Z0-9_]+)\/status\/([0-9]+)/)
