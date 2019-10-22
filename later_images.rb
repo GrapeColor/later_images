@@ -19,22 +19,15 @@ end
 bot.ready { bot.game = "Twitter" }
 
 bot.message(attributes = {contains: "https://twitter.com/"}) do |event|
-  match_url = event.content.match(%r{https://twitter.com/([a-zA-Z0-9_]+)/status/([0-9]+)})
-  next if match_url.nil?
+  tweet_id = event.content.match(%r{https://twitter.com/(\w+)/status/(\d+)})[2]
+  next if tweet_id.nil?
 
-  tweet = client.status(match_url[2])
-  next if tweet.attrs[:possibly_sensitive] && !event.channel.nsfw
+  tweet = client.status(tweet_id)
+  next if tweet.attrs[:possibly_sensitive] && event.channel.nsfw == false
 
-  if tweet.media?
-    media = tweet.media
-    if media[0].type == "photo"
-      photo_urls = media.map { |m| m.media_url_https.to_s }
-    end
-
-    if photo_urls.length > 1
-      photo_urls.shift
-      photo_urls.each { |url| event << url }
-    end
+  tweet.media.each_with_index do |m, index|
+    next if index < 1 || m.type != "photo"
+    event << m.media_url_https.to_s
   end
 end
  
