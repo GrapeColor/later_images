@@ -29,15 +29,18 @@ bot.message(attributes = {contains: "https://twitter.com/"}) do |event|
   tweet = client.status(match_url[2])
   next if tweet.attrs[:possibly_sensitive] && event.channel.nsfw == false
   
-  # Embedがあるか(Embedが送られるまで待つ)
-  sleep(0.5)
-  next if event.channel.load_message(event.message.id).embeds.empty?
-
   # 画像URLを取得
   tweet.media.each_with_index do |m, index|
     next if index < 1 || m.type != "photo"
     event << "\u27A1 " + event.message.id.to_s(36) if index == 1
     event << m.media_url_https.to_s
+  end
+  
+  # Embedがあるか(10回リトライ)
+  10.times do |count|
+    break unless event.channel.load_message(event.message.id).embeds.empty?
+    event.drain if count >= 9
+    sleep(0.1 * (count + 1))
   end
 end
 
