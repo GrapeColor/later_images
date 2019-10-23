@@ -12,7 +12,10 @@ https://loumo.jp/wp/archive/20180608120023/
 
 ## 導入方法
 以下のリンクからサーバーに招待し、BOTに適切な権限を与えてください。  
-https://discordapp.com/api/oauth2/authorize?client_id=629507137995014164&permissions=0&scope=bot
+https://discordapp.com/api/oauth2/authorize?client_id=629507137995014164&permissions=0&scope=bot  
+  
+必要最低限の権限が初めから付与されたリンクはこちらになります。  
+https://discordapp.com/api/oauth2/authorize?client_id=629507137995014164&permissions=84992&scope=bot
 
 ## 不具合
 一部の画像つきツイートに反応しません。これはTwitter API側の不具合で、現時点では修正できません。
