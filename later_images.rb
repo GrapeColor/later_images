@@ -63,5 +63,16 @@ bot.message_delete do |event|
     end
   end
 end
- 
+
+# ダイレクトメッセージ
+bot.pm do |event|
+  event << "メッセージありがとうございます。"
+  event << "このBOTは画像つきツイートが送信されたときに、2枚目以降の画像をチャンネルに送信するBOTです。"
+  event << "以下のリンクからサーバーに招待できます。"
+  event << bot.invite_url() + " （権限なし招待リンク）"
+  event.send_message(event.saved_message)
+  event.drain
+  event.send_message(bot.invite_url(permission_bits: 84992) + " （権限つき招待リンク）")
+end
+
 bot.run
