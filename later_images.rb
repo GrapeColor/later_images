@@ -21,33 +21,34 @@ bot.ready { bot.game = "Twitter" }
 
 # "https://twitter.com/"を含むメッセージ
 bot.message(attributes = {contains: "https://twitter.com/"}) do |event|
-  # レスポンスIDを挿入
-  event << "\u27A1 " + event.message.id.to_s(36)
-
   # URLがマッチするか
   match_url = event.content.match(%r{https://twitter.com/(\w+)/status/(\d+)})
-  if match_url.nil?
-    event.drain
-    next
-  end
-
-  # ツイートはNSFWではないか
+  next if match_url.nil?
   tweet = client.status(match_url[2])
+  
+  # 画像が2枚以上あるか
+  media = tweet.media.dup
+  next if media.length <= 1 || media[0].type != "photo"
+  media.shift
+
+  # レスポンスIDを挿入
+  event << "\u27A1 " + event.message.id.to_s(36)
+  
+  # ツイートはNSFWではないか
   if tweet.attrs[:possibly_sensitive] && event.channel.nsfw == false
     event << "**センシティブな内容が含まれる可能性があるため、表示できません。**"
     next
   end
-  
+
   # 画像URLを取得
-  tweet.media.each_with_index do |m, index|
-    next if index < 1 || m.type != "photo"
-    event << m.media_url_https.to_s
-  end
+  media.each { |m| event << m.media_url_https.to_s }
   
   # Embedがあるか(10回リトライ)
   10.times do |count|
-    break unless event.channel.load_message(event.message.id).embeds.empty?
-    event.drain if count >= 9
+    unless event.channel.load_message(event.message.id).embeds.empty?
+      event.send_message(event.drain_into(""))
+      break
+    end
     sleep(0.1 * (count + 1))
   end
 end
