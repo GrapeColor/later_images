@@ -20,11 +20,11 @@ end
 bot.ready { bot.game = "Twitter" }
 
 # "https://twitter.com/"を含むメッセージ
-bot.message(attributes = {contains: "https://twitter.com/"}) do |event|
+bot.message(attributes = { contains: "https://twitter.com/" }) do |event|
   # URLがマッチするか
   match_url = event.content.match(%r{https://twitter.com/(\w+)/status/(\d+)})
   next if match_url.nil?
-  tweet = client.status(match_url[2])
+  tweet = client.status(match_url[2], { tweet_mode: "extended" })
   
   # 画像が2枚以上あるか
   media = tweet.media.dup
@@ -78,9 +78,7 @@ bot.pm do |event|
   event << "メッセージありがとうございます。"
   event << "このBOTは画像つきツイートが送信されたときに、2枚目以降の画像をチャンネルに送信するBOTです。"
   event << "以下のリンクからサーバーに招待できます。"
-  event << bot.invite_url() + " （権限なし招待リンク）"
-  event.send_message(event.saved_message)
-  event.drain
+  event.send_message(event.drain_into(bot.invite_url() + " （権限なし招待リンク）"))
   event.send_message(bot.invite_url(permission_bits: 84992) + " （権限つき招待リンク）")
 end
 
