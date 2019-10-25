@@ -46,11 +46,12 @@ bot.message(attributes = { contains: "https://twitter.com/" }) do |event|
   # Embedがあるか(10回リトライ)
   10.times do |count|
     unless event.channel.load_message(event.message.id).embeds.empty?
-      event.send_message(event.drain_into(""))
+      event.send_message(event.saved_message)
       break
     end
     sleep(0.1 * (count + 1))
   end
+  event.drain
 end
 
 # メッセージの削除
