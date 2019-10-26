@@ -9,6 +9,10 @@ Discord用のBOTで、Twitterの画像つきツイートがメッセージで送
 - URLの頭に`!`を付けたメッセージには反応しない。
 
 ## 導入方法
+このBOTは個人が無償で運用しているBOTです。  
+予告なく運用を終了したり、仕様が変更される可能性があります。  
+導入に際しては**自己責任**でお願いします。  
+
 以下のリンクからサーバーに招待し、BOTに適切な権限を与えてください。  
 https://discordapp.com/api/oauth2/authorize?client_id=629507137995014164&permissions=0&scope=bot  
   
