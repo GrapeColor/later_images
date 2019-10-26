@@ -6,7 +6,8 @@ Dotenv.load
 
 bot = Discordrb::Bot.new(
   client_id: ENV['DISCORD_CLIENT_ID'],
-  token:     ENV['DISCORD_TOKEN']
+  token:     ENV['DISCORD_TOKEN'],
+  log_mode: :debug
 )
 
 client = Twitter::REST::Client.new do |config|
@@ -17,13 +18,13 @@ client = Twitter::REST::Client.new do |config|
 end
 
 # プレイ中のゲームを設定
-bot.ready { bot.game = "Twitter" }
+bot.ready { bot.watching = "Twitter" }
 
 # "https://twitter.com/"を含むメッセージ
-bot.message(attributes = { contains: "https://twitter.com/" }) do |event|
+bot.message(attributes = { contains: "://twitter.com/" }) do |event|
   # URLがマッチするか
-  match_url = event.content.match(%r{https://twitter.com/(\w+)/status/(\d+)})
-  next if match_url.nil?
+  match_url = event.content.match(%r{!?https*://twitter.com/(\w+)/status/(\d+)})
+  next if match_url.nil? || match_url[0].start_with?("!")
   tweet = client.status(match_url[2], { tweet_mode: "extended" })
   
   # 画像が2枚以上あるか
