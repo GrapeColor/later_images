@@ -31,12 +31,14 @@ bot.message(attributes = { contains: "://twitter.com/" }) do |event|
   next if media.length <= 1 || media[0].type != "photo"
   media.shift
 
-  # レスポンスIDを挿入
-  event << "\u{1f194} " + event.message.id.to_s(36) + " (@" + match_url[1] + ")"
+  # レスポンスIDを生成
+  respond_id = "https://discordapp.com/channels/#{event.server.id}/#{event.channel.id}/#{event.message.id}"
   
   # ツイートはNSFWではないか
   if tweet.attrs[:possibly_sensitive] && event.channel.nsfw == false
-    event << "**センシティブな内容が含まれる可能性があるため、表示できません。**"
+    event << "**このツイートはセンシティブな内容が含まれる可能性があるため、画像を表示できません。**"
+    event << "（NSFWチャンネルでのみ表示できます。）"
+    event << respond_id
     next
   end
 
@@ -46,7 +48,7 @@ bot.message(attributes = { contains: "://twitter.com/" }) do |event|
   # Embedがあるか(10回リトライ)
   10.times do |count|
     unless event.channel.load_message(event.message.id).embeds.empty?
-      event.send_message(event.saved_message)
+      event.send_message(event.saved_message + respond_id)
       break
     end
     sleep(0.1 * (count + 1))
@@ -62,11 +64,12 @@ bot.message_delete do |event|
     next if message.author != bot.profile.id
     
     # レスポンスIDはあるか
-    match_reply = message.content.match(/([\u{1f194}]|[\u27A1]|REPLY TO:) ([a-z0-9]+)/)
+    match_reply = message.content.match(%r{https://discordapp.com/channels/(\d+)/(\d+)/(\d+)})
+    match_reply = message.content.match(/([\u{1f194}]|[\u27A1]|REPLY TO:) ([a-z0-9]+)/) if match_reply.nil?
     next if match_reply.nil?
 
     # 削除メッセージIDと一致するか
-    if event.id == match_reply[2].to_i(36)
+    if event.id == match_reply[3].to_i || event.id == match_reply[2].to_i(36)
       message.delete
       break
     end
