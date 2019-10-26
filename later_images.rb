@@ -6,8 +6,7 @@ Dotenv.load
 
 bot = Discordrb::Bot.new(
   client_id: ENV['DISCORD_CLIENT_ID'],
-  token:     ENV['DISCORD_TOKEN'],
-  log_mode: :debug
+  token:     ENV['DISCORD_TOKEN']
 )
 
 client = Twitter::REST::Client.new do |config|
