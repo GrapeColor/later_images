@@ -22,7 +22,7 @@ bot.ready { bot.watching = "Twitter" }
 # "https://twitter.com/"を含むメッセージ
 bot.message(attributes = { contains: "://twitter.com/" }) do |event|
   # URLがマッチするか
-  match_url = event.content.match(%r{!?https*://twitter.com/(\w+)/status/(\d+)})
+  match_url = event.content.match(%r{!?https?://twitter.com/(\w+)/status/(\d+)})
   next if match_url.nil? || match_url[0].start_with?("!")
   tweet = client.status(match_url[2], { tweet_mode: "extended" })
   
@@ -32,7 +32,7 @@ bot.message(attributes = { contains: "://twitter.com/" }) do |event|
   media.shift
 
   # レスポンスIDを挿入
-  event << "\u27A1 " + event.message.id.to_s(36)
+  event << "\u{1f194} " + event.message.id.to_s(36) + " (@" + match_url[1] + ")"
   
   # ツイートはNSFWではないか
   if tweet.attrs[:possibly_sensitive] && event.channel.nsfw == false
@@ -62,12 +62,11 @@ bot.message_delete do |event|
     next if message.author != bot.profile.id
     
     # レスポンスIDはあるか
-    match_reply = message.content.match(/[\u27A1] ([a-z0-9]+)/) # 新パターン
-    match_reply = message.content.match(%r{<REPLY TO: ([a-z0-9]+)>}) if match_reply.nil?
+    match_reply = message.content.match(/([\u{1f194}]|[\u27A1]|REPLY TO:) ([a-z0-9]+)/)
     next if match_reply.nil?
 
     # 削除メッセージIDと一致するか
-    if event.id == match_reply[1].to_i(36)
+    if event.id == match_reply[2].to_i(36)
       message.delete
       break
     end
@@ -77,10 +76,9 @@ end
 # ダイレクトメッセージ受け取り
 bot.pm do |event|
   event << "メッセージありがとうございます。"
-  event << "このBOTは画像つきツイートが送信されたときに、2枚目以降の画像をチャンネルに送信するBOTです。"
-  event << "以下のリンクからサーバーに招待できます。"
-  event.send_message(event.drain_into(bot.invite_url() + " （権限なし招待リンク）"))
-  event.send_message(bot.invite_url(permission_bits: 84992) + " （権限つき招待リンク）")
+  event << "このBOTは画像つきツイートがテキストチャンネルに送信されたときに、2枚目以降の画像を自動で送信するBOTです。"
+  event << "詳細な説明は以下のリンクからご覧ください。"
+  event << "https://github.com/GrapeColor/later_images/blob/master/readme.md"
 end
 
 bot.run
