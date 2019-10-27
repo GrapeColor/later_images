@@ -19,6 +19,16 @@ end
 # 視聴中メッセージを設定
 bot.ready { bot.watching = "Twitter" }
 
+# ハートビートイベント
+bot.heartbeat do
+  # Discordと接続できているか
+  unless bot.connected?
+    bot.stop
+    sleep(60)
+    bot.run
+  end
+end
+
 # "https://twitter.com/"を含むメッセージ
 bot.message(attributes = { contains: "://twitter.com/" }) do |event|
   # URLがマッチするか
