@@ -16,7 +16,7 @@ client = Twitter::REST::Client.new do |config|
   config.access_token_secret = ENV['TWITTER_ACCESS_TOKEN_SECRET']
 end
 
-# プレイ中のゲームを設定
+# 視聴中メッセージを設定
 bot.ready { bot.watching = "Twitter" }
 
 # "https://twitter.com/"を含むメッセージ
@@ -31,7 +31,7 @@ bot.message(attributes = { contains: "://twitter.com/" }) do |event|
   next if media.length <= 1 || media[0].type != "photo"
   media.shift
 
-  # レスポンスIDを生成
+  # レスポンスURLを生成
   respond_id = "https://discordapp.com/channels/#{event.server.id}/#{event.channel.id}/#{event.message.id}"
   
   # ツイートはNSFWではないか
@@ -63,7 +63,7 @@ bot.message_delete do |event|
     # BOT自身のメッセージか
     next if message.author != bot.profile.id
     
-    # レスポンスIDはあるか
+    # レスポンスURL・IDはあるか
     match_reply = message.content.match(%r{https://discordapp.com/channels/(\d+)/(\d+)/(\d+)})
     match_reply = message.content.match(/([\u{1f194}]|[\u27A1]|REPLY TO:) ([a-z0-9]+)/) if match_reply.nil?
     next if match_reply.nil?
@@ -76,11 +76,44 @@ bot.message_delete do |event|
   end
 end
 
+# メンション受け取り
+bot.mention do |event|
+  event.send_embed do |embed|
+    embed.author = Discordrb::Webhooks::EmbedAuthor.new(
+      name: "Later Images",
+      url: 'https://github.com/GrapeColor/later_images',
+      icon_url: 'https://cdn.discordapp.com/app-icons/629507137995014164/fa55fe16f7a9a51389d6efff6db60417.png'
+    )
+    embed.color = 0x1da1f2
+    embed.description = "画像つきツイートの2枚目以降の画像を表示するBOTです"
+    embed.add_field(
+      name: "**使い方**", 
+      value: "画像が2枚以上含まれたツイートのURLをメッセージで送信してください"
+    )
+    embed.add_field(
+      name: "**画像を削除したいとき**",
+      value: "ツイートのURLを含むメッセージを削除してください"
+    )
+    embed.add_field(
+      name: "**画像を表示して欲しくないとき**",
+      value: "URLの先頭に`!`を付けるか、URL自体を装飾してください"
+    )
+    embed.add_field(
+      name: "**センシティブコンテンツを含むツイート**",
+      value: "NSFWチャンネルでのみ表示できます"
+    )
+    embed.add_field(
+      name: "**BOTをサーバーに招待したい**",
+      value: "BOTにダイレクトメッセージを送ってください"
+    )
+  end
+end
+
 # ダイレクトメッセージ受け取り
 bot.pm do |event|
   event << "メッセージありがとうございます。"
   event << "このBOTは画像つきツイートがテキストチャンネルに送信されたときに、2枚目以降の画像を自動で送信するBOTです。"
-  event << "詳細な説明は以下のリンクからご覧ください。"
+  event << "詳細な説明、BOTの招待方法は以下のリンクからご覧ください。"
   event << "https://github.com/GrapeColor/later_images/blob/master/readme.md"
 end
 
