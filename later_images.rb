@@ -89,8 +89,8 @@ bot.mention do |event|
   event.send_embed do |embed|
     embed.author = Discordrb::Webhooks::EmbedAuthor.new(
       name: "Later Images",
-      url: 'https://github.com/GrapeColor/later_images',
-      icon_url: 'https://cdn.discordapp.com/app-icons/629507137995014164/fa55fe16f7a9a51389d6efff6db60417.png'
+      url: ENV['APP_REPOSITORY_URL'],
+      icon_url: ENV['APP_ICON_URL']
     )
     embed.color = 0x1da1f2
     embed.description = "画像つきツイートの2枚目以降の画像を表示するBOTです"
@@ -122,7 +122,7 @@ bot.pm do |event|
   event << "メッセージありがとうございます。"
   event << "このBOTは画像つきツイートがテキストチャンネルに送信されたときに、2枚目以降の画像を自動で送信するBOTです。"
   event << "詳細な説明、BOTの招待方法は以下のリンクからご覧ください。"
-  event << "https://github.com/GrapeColor/later_images/blob/master/readme.md"
+  event << ENV['APP_README_URL']
 end
 
 bot.run
