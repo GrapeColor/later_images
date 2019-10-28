@@ -46,7 +46,7 @@ bot.message(attributes = { contains: "://twitter.com/" }) do |event|
   
   # ツイートはNSFWではないか
   if tweet.attrs[:possibly_sensitive] && event.channel.nsfw == false
-    event << "**このツイートはセンシティブな内容が含まれる可能性があるため、画像を表示できません。**"
+    event << "**センシティブな内容が含まれる可能性があるため、表示できません。**"
     event << "（NSFWチャンネルでのみ表示できます。）"
     next
   end
