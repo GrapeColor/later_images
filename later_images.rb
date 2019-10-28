@@ -3,6 +3,8 @@ require 'discordrb'
 require 'twitter'
 
 Dotenv.load
+EMBED_RETRY  = 10  # Embed確認最大回数
+DELETE_RANGE = 10  # 削除メッセージ検索範囲
 
 bot = Discordrb::Bot.new(
   client_id: ENV['DISCORD_CLIENT_ID'],
@@ -29,7 +31,7 @@ bot.heartbeat do
   end
 end
 
-# "https://twitter.com/"を含むメッセージ
+# ツイートURLを含むメッセージ
 bot.message(attributes = { contains: "://twitter.com/" }) do |event|
   # URLがマッチするか
   match_url = event.content.match(%r{!?https?://twitter.com/\w+/status/(\d+)})
@@ -41,38 +43,43 @@ bot.message(attributes = { contains: "://twitter.com/" }) do |event|
   next if media.length <= 1 || media[0].type != "photo"
   media.shift
 
-  # レスポンスURLを生成
+  # メッセージIDを挿入
+  event.channel.start_typing
   event << "メッセージ(ID: #{event.message.id})のツイート画像です"
   
   # ツイートはNSFWではないか
-  if tweet.attrs[:possibly_sensitive] && event.channel.nsfw == false
+  if tweet.attrs[:possibly_sensitive] && !event.channel.nsfw?
+    # 注意文を挿入
     event << "**センシティブな内容が含まれる可能性があるため、表示できません。**"
     event << "（NSFWチャンネルでのみ表示できます。）"
-    next
+  else
+    # 画像URLを挿入
+    media.each { |m| event << m.media_url_https.to_s }
   end
-
-  # 画像URLを取得
-  media.each { |m| event << m.media_url_https.to_s }
   
-  # Embedがあるか(10回リトライ)
-  10.times do
+  # Embedがあるか(Discrod側の埋め込み処理待機)
+  EMBED_RETRY.times do
     unless event.channel.load_message(event.message.id).embeds.empty?
-      message = event.send_message(event.saved_message)
+      # メッセージ検索範囲を超えていないか
+      if event.channel.history(DELETE_RANGE, nil, event.message.id).length < DELETE_RANGE
+        event.send_message(event.saved_message)
+      end
       break
     end
     sleep(0.5)
   end
+
   event.drain
 end
 
 # メッセージの削除
 bot.message_delete do |event|
-  # 削除メッセージ以降10件のメッセージを検証
-  event.channel.history(10, nil, event.id).each do |message|
+  # 削除メッセージ以降のメッセージを検索
+  event.channel.history(DELETE_RANGE, nil, event.id).each do |message|
     # BOT自身のメッセージか
     next if message.author != bot.profile.id
     
-    # レスポンスIDはあるか
+    # メッセージIDはあるか
     match_reply = message.content.match(/(ID:|[\u{1f194}]|[\u27A1]|REPLY TO:) ([a-z0-9]+)/)
     next if match_reply.nil?
 
@@ -86,6 +93,7 @@ end
 
 # メンション受け取り
 bot.mention do |event|
+  event.channel.start_typing
   event.send_embed do |embed|
     embed.author = Discordrb::Webhooks::EmbedAuthor.new(
       name: ENV['APP_NAME'],
@@ -119,6 +127,7 @@ end
 
 # ダイレクトメッセージ受け取り
 bot.pm do |event|
+  event.channel.start_typing
   event << "メッセージありがとうございます。"
   event << "このBOTは画像つきツイートがテキストチャンネルに送信されたときに、2枚目以降の画像を自動で送信するBOTです。"
   event << "詳細な説明、BOTの招待方法は以下のリンクからご覧ください。"
