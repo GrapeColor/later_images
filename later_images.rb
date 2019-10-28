@@ -32,9 +32,9 @@ end
 # "https://twitter.com/"を含むメッセージ
 bot.message(attributes = { contains: "://twitter.com/" }) do |event|
   # URLがマッチするか
-  match_url = event.content.match(%r{!?https?://twitter.com/(\w+)/status/(\d+)})
+  match_url = event.content.match(%r{!?https?://twitter.com/\w+/status/(\d+)})
   next if match_url.nil? || match_url[0].start_with?("!")
-  tweet = client.status(match_url[2], { tweet_mode: "extended" })
+  tweet = client.status(match_url[1], { tweet_mode: "extended" })
   
   # 画像が2枚以上あるか
   media = tweet.media.dup
@@ -55,12 +55,12 @@ bot.message(attributes = { contains: "://twitter.com/" }) do |event|
   media.each { |m| event << m.media_url_https.to_s }
   
   # Embedがあるか(10回リトライ)
-  (1..10).each do |n|
+  10.times do
     unless event.channel.load_message(event.message.id).embeds.empty?
       message = event.send_message(event.saved_message)
       break
     end
-    sleep(0.1 * n)
+    sleep(0.5)
   end
   event.drain
 end
@@ -73,7 +73,7 @@ bot.message_delete do |event|
     next if message.author != bot.profile.id
     
     # レスポンスIDはあるか
-    match_reply = message.content.match(/(ID:|[\u{1f194}]|[\u27A1]|REPLY TO:) ([a-z0-9]+)/) if match_reply.nil?
+    match_reply = message.content.match(/(ID:|[\u{1f194}]|[\u27A1]|REPLY TO:) ([a-z0-9]+)/)
     next if match_reply.nil?
 
     # 削除メッセージIDと一致するか
