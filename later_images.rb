@@ -88,7 +88,7 @@ end
 bot.mention do |event|
   event.send_embed do |embed|
     embed.author = Discordrb::Webhooks::EmbedAuthor.new(
-      name: "Later Images",
+      name: ENV['APP_NAME'],
       url: ENV['APP_REPOSITORY_URL'],
       icon_url: ENV['APP_ICON_URL']
     )
