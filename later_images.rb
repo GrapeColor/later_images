@@ -18,8 +18,8 @@ client = Twitter::REST::Client.new do |config|
   config.access_token_secret = ENV['TWITTER_ACCESS_TOKEN_SECRET']
 end
 
-# 視聴中メッセージを設定
-bot.ready { bot.watching = "Twitter" }
+# ステータス表示を設定
+bot.ready { bot.game = "Twitter | @" + bot.profile.distinct }
 
 # ハートビートイベント
 bot.heartbeat do
@@ -32,7 +32,7 @@ bot.heartbeat do
 end
 
 # ツイートURLを含むメッセージ
-bot.message(attributes = { contains: "://twitter.com/" }) do |event|
+bot.message({ contains: "://twitter.com/" }) do |event|
   # URLがマッチするか
   match_url = event.content.match(%r{!?https?://twitter.com/\w+/status/(\d+)})
   next if match_url.nil? || match_url[0].start_with?("!")
@@ -43,12 +43,16 @@ bot.message(attributes = { contains: "://twitter.com/" }) do |event|
   next if media.length <= 1 || media[0].type != "photo"
   media.shift
 
+  # メッセージ生成処理開始
+  channel = event.channel
+  message = event.message
+  channel.start_typing
+
   # メッセージIDを挿入
-  event.channel.start_typing
-  event << "メッセージ(ID: #{event.message.id})のツイート画像です"
+  event << "メッセージ(ID: #{message.id})のツイート画像です"
   
   # ツイートはNSFWではないか
-  if tweet.attrs[:possibly_sensitive] && !event.channel.nsfw?
+  if tweet.attrs[:possibly_sensitive] && !channel.nsfw?
     # 注意文を挿入
     event << "**センシティブな内容が含まれる可能性があるため、表示できません。**"
     event << "（NSFWチャンネルでのみ表示できます。）"
@@ -59,9 +63,9 @@ bot.message(attributes = { contains: "://twitter.com/" }) do |event|
   
   # Embedがあるか(Discrod側の埋め込み処理待機)
   EMBED_RETRY.times do
-    unless event.channel.load_message(event.message.id).embeds.empty?
+    unless channel.load_message(message.id).embeds.empty?
       # メッセージ検索範囲を超えていないか
-      if event.channel.history(DELETE_RANGE, nil, event.message.id).length < DELETE_RANGE
+      if channel.history(DELETE_RANGE, nil, message.id).length < DELETE_RANGE
         event.send_message(event.saved_message)
       end
       break
@@ -96,9 +100,9 @@ bot.mention do |event|
   event.channel.start_typing
   event.send_embed do |embed|
     embed.author = Discordrb::Webhooks::EmbedAuthor.new(
-      name: ENV['APP_NAME'],
-      url: ENV['APP_REPOSITORY_URL'],
-      icon_url: ENV['APP_ICON_URL']
+      name: bot.profile.username,
+      url: ENV['APP_URL'],
+      icon_url: bot.profile.avatar_url
     )
     embed.color = 0x1da1f2
     embed.description = "画像つきツイートの2枚目以降の画像を表示するBOTです"
