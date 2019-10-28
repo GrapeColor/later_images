@@ -56,11 +56,11 @@ bot.message(attributes = { contains: "://twitter.com/" }) do |event|
   
   # Embedがあるか(10回リトライ)
   (1..10).each do |n|
-    sleep(0.1 * n)
     unless event.channel.load_message(event.message.id).embeds.empty?
       message = event.send_message(event.saved_message)
       break
     end
+    sleep(0.1 * n)
   end
   event.drain
 end
