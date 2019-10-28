@@ -49,13 +49,12 @@ bot.message({ contains: "://twitter.com/" }) do |event|
   channel.start_typing
 
   # メッセージIDを挿入
-  event << "メッセージ(ID: #{message.id})のツイート画像です"
+  event << "メッセージ(ID: #{message.id})のツイート画像"
   
   # ツイートはNSFWではないか
   if tweet.attrs[:possibly_sensitive] && !channel.nsfw?
     # 注意文を挿入
-    event << "**センシティブな内容が含まれる可能性があるため、表示できません。**"
-    event << "（NSFWチャンネルでのみ表示できます。）"
+    event << "**センシティブな内容が含まれる可能性があるため、表示できません**"
   else
     # 画像URLを挿入
     media.each { |m| event << m.media_url_https.to_s }
@@ -67,6 +66,8 @@ bot.message({ contains: "://twitter.com/" }) do |event|
       # メッセージ検索範囲を超えていないか
       if channel.history(DELETE_RANGE, nil, message.id).length < DELETE_RANGE
         event.send_message(event.saved_message)
+      else
+        event.send_temporary_message("BOTが応答するまでの間にチャンネルに既定以上のメッセージが送信されました", 10)
       end
       break
     end
