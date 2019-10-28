@@ -134,7 +134,7 @@ end
 bot.pm do |event|
   event.channel.start_typing
   event << "メッセージありがとうございます。"
-  event << "このBOTは画像つきツイートがテキストチャンネルに送信されたときに、2枚目以降の画像を自動で送信するBOTです。"
+  event << "このBOTはTwitterの画像つきツイートのURLがテキストチャンネルに送信されたときに、2枚目以降の画像を自動で送信するBOTです。"
   event << "詳細な説明、BOTの招待方法は以下のリンクからご覧ください。"
   event << ENV['APP_README_URL']
 end
