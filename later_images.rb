@@ -43,35 +43,36 @@ bot.message({ contains: "://twitter.com/" }) do |event|
   next if media.length <= 1 || media[0].type != "photo"
   media.shift
 
-  # メッセージ生成処理開始
+  # 変数初期化・入力開始
   channel = event.channel
   message = event.message
   channel.start_typing
-
-  # メッセージIDを挿入
+  
+  # メッセージID・画像URL挿入
   event << "メッセージ(ID: #{message.id})のツイート画像"
-  
-  # ツイートはNSFWではないか
-  if tweet.attrs[:possibly_sensitive] && !channel.nsfw?
-    # 注意文を挿入
-    event << "**センシティブな内容が含まれる可能性があるため、表示できません**"
-  else
-    # 画像URLを挿入
-    media.each { |m| event << m.media_url_https.to_s }
-  end
-  
-  # Embedがあるか(Discrod側の埋め込み処理待機)
+  media.each { |m| event << m.media_url_https.to_s }
+
+  # Discord処理待ち
   EMBED_RETRY.times do
-    unless channel.load_message(message.id).embeds.empty?
-      # メッセージ検索範囲を超えていないか
-      if channel.history(DELETE_RANGE, nil, message.id).length < DELETE_RANGE
-        event.send_message(event.saved_message)
-      else
-        event.send_temporary_message("BOTが応答するまでの間にチャンネルに既定以上のメッセージが送信されました", 10)
-      end
+    # Embedは埋め込まれているか
+    if channel.load_message(message.id).embeds.empty?
+      sleep(0.5)
+      next
+    end
+
+    # ツイートはNSFWではないか
+    if tweet.attrs[:possibly_sensitive] && !channel.nsfw?
+      event.send_temporary_message("**ツイートにセンシティブな内容が含まれる可能性があるため、画像を表示できません**", 30)
       break
     end
-    sleep(0.5)
+
+    # メッセージ検索範囲を超えていないか
+    if channel.history(DELETE_RANGE, nil, message.id).length < DELETE_RANGE
+      event.send_message(event.saved_message)
+    else
+      event.send_temporary_message("BOTが応答するまでの間にチャンネルに既定以上のメッセージが送信されました", 30)
+    end
+    break
   end
 
   event.drain
