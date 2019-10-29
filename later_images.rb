@@ -5,6 +5,7 @@ require 'twitter'
 Dotenv.load
 EMBED_RETRY  = 10  # Embed確認最大回数
 DELETE_RANGE = 10  # 削除メッセージ検索範囲
+TEMP_SECOND  = 30  # 一時メッセージ表示時間
 
 bot = Discordrb::Bot.new(
   client_id: ENV['DISCORD_CLIENT_ID'],
@@ -62,7 +63,7 @@ bot.message({ contains: "://twitter.com/" }) do |event|
 
     # ツイートはNSFWではないか
     if tweet.attrs[:possibly_sensitive] && !channel.nsfw?
-      event.send_temporary_message("**ツイートにセンシティブな内容が含まれる可能性があるため、画像を表示できません**", 30)
+      event.send_temporary_message("**ツイートにセンシティブな内容が含まれる可能性があるため、画像を表示できません**", TEMP_SECOND)
       break
     end
 
@@ -70,7 +71,7 @@ bot.message({ contains: "://twitter.com/" }) do |event|
     if channel.history(DELETE_RANGE, nil, message.id).length < DELETE_RANGE
       event.send_message(event.saved_message)
     else
-      event.send_temporary_message("BOTが応答するまでの間にチャンネルに既定以上のメッセージが送信されました", 30)
+      event.send_temporary_message("BOTが応答するまでの間にチャンネルに既定以上のメッセージが送信されました", TEMP_SECOND)
     end
     break
   end
@@ -118,7 +119,7 @@ bot.mention do |event|
     )
     embed.add_field(
       name: "**画像を表示して欲しくないとき**",
-      value: "URLの先頭に`!`を付けるか、URL自体を装飾してください"
+      value: "URLの先頭に「!」を付けるか、URL自体を装飾してください"
     )
     embed.add_field(
       name: "**センシティブコンテンツを含むツイート**",
