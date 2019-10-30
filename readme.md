@@ -20,5 +20,5 @@ https://discordapp.com/api/oauth2/authorize?client_id=629507137995014164&permiss
 https://discordapp.com/api/oauth2/authorize?client_id=629507137995014164&permissions=84992&scope=bot
 
 ## 仕様上の動作
-メッセージが送信されてから5秒以内にDiscordによってEmbedが埋め込まれない場合、画像URLの送信を中止します。  
+メッセージが送信されてから30秒以上DiscordによってEmbedが埋め込まれなかった場合、画像URLの送信を中止します。  
 メッセージが送信されてからBOTが画像URLを送るまでの間に、同じチャンネルに10件以上のメッセージが送信された場合、画像URLの送信を中止します。  
