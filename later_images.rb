@@ -1,3 +1,4 @@
+require "bundler/setup"
 require 'dotenv'
 require 'discordrb'
 require 'twitter'
