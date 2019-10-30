@@ -30,13 +30,6 @@ bot.heartbeat do
   # タイムアウトしたメッセージを破棄
   now = Time.now
   pending_messages.delete_if { |id, message| now - message.timestamp > EMBED_TIMEOUT }
-  
-  # Discordと接続できているか
-  unless bot.connected?
-    bot.stop
-    sleep(60)
-    bot.run
-  end
 end
 
 # メッセージ生成
