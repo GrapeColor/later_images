@@ -1,18 +1,24 @@
+GIT
+  remote: https://github.com/discordrb/discordrb
+  revision: 329045797fb2eb76275d47403eb08016458910e6
+  ref: 3290457
+  specs:
+    discordrb (3.3.0)
+      discordrb-webhooks (~> 3.3.0)
+      ffi (>= 1.9.24)
+      opus-ruby
+      rbnacl (~> 6.0)
+      rest-client (>= 2.1.0.rc1)
+      websocket-client-simple (>= 0.3.0)
+    discordrb-webhooks (3.3.0)
+      rest-client (>= 2.1.0.rc1)
+
 GEM
   remote: https://rubygems.org/
   specs:
     addressable (2.7.0)
       public_suffix (>= 2.0.2, < 5.0)
     buftok (0.2.0)
-    discordrb (3.3.0)
-      discordrb-webhooks (~> 3.3.0)
-      ffi (>= 1.9.24)
-      opus-ruby
-      rbnacl (~> 3.4.0)
-      rest-client (>= 2.1.0.rc1)
-      websocket-client-simple (>= 0.3.0)
-    discordrb-webhooks (3.3.0)
-      rest-client (>= 2.1.0.rc1)
     domain_name (0.5.20190701)
       unf (>= 0.0.5, < 1.0.0)
     dotenv (2.7.5)
@@ -33,14 +39,14 @@ GEM
       thread_safe (~> 0.3, >= 0.3.1)
     mime-types (3.3)
       mime-types-data (~> 3.2015)
-    mime-types-data (3.2019.0904)
+    mime-types-data (3.2019.1009)
     multipart-post (2.1.1)
     naught (1.1.0)
     netrc (0.11.0)
     opus-ruby (1.0.1)
       ffi
     public_suffix (4.0.1)
-    rbnacl (3.4.0)
+    rbnacl (6.0.1)
       ffi
     rest-client (2.1.0-x64-mingw32)
       ffi (~> 1.9)
@@ -73,7 +79,7 @@ PLATFORMS
   x64-mingw32
 
 DEPENDENCIES
-  discordrb
+  discordrb!
   dotenv
   twitter
 
