@@ -50,8 +50,6 @@ def message_generater(event, message_id, content)
   media = tweet.media.dup
   return if media.length <= 1 || media[0].type != "photo"
   media.shift
-
-  event.channel.start_typing
   
   # ツイートはNSFWではないか
   if tweet.attrs[:possibly_sensitive] && !event.channel.nsfw?
@@ -108,7 +106,6 @@ end
 
 # メンション受け取り
 bot.mention do |event|
-  event.channel.start_typing
   event.send_embed do |embed|
     embed.author = Discordrb::Webhooks::EmbedAuthor.new(
       name: bot.profile.username,
@@ -142,7 +139,6 @@ end
 
 # ダイレクトメッセージ受け取り
 bot.pm do |event|
-  event.channel.start_typing
   event << "メッセージありがとうございます。"
   event << "このbotはTwitterの画像つきツイートのURLがテキストチャンネルに送信されたときに、2枚目以降の画像URLを自動で送信するbotです。"
   event << "詳細な説明、botの招待方法は以下のリンクからご覧ください。"
