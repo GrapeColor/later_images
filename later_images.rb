@@ -3,11 +3,15 @@ require 'dotenv'
 require 'discordrb'
 
 Dotenv.load
-require './message.rb'
+require './message'
 
-pending_messages = {} # Embed埋め込み待ちメッセージ
+waiting_messages = {} # Embed埋め込み待ちメッセージ
 
-bot = Discordrb::Bot.new(client_id: ENV['DISCORD_CLIENT_ID'], token: ENV['DISCORD_TOKEN'])
+bot = Discordrb::Bot.new(
+  name: "Later Images",
+  client_id: ENV['DISCORD_CLIENT_ID'],
+  token: ENV['DISCORD_TOKEN']
+)
 
 # ステータス表示を設定
 bot.ready { bot.game = "Twitter | @" + bot.profile.distinct }
@@ -16,13 +20,14 @@ bot.ready { bot.game = "Twitter | @" + bot.profile.distinct }
 bot.heartbeat do
   # タイムアウトしたメッセージを破棄
   now = Time.now
-  pending_messages.delete_if { |id, message| now - message.timestamp > Message::EMBED_TIMEOUT }
+  waiting_messages.delete_if { |id, message| now - message.timestamp > Message::EMBED_TIMEOUT }
 end
 
 # ツイートURLを含むメッセージの送信
 bot.message({ contains: "://twitter.com/" }) do |event|
+  # Embedが埋め込まれているか
   if event.message.embeds.empty?
-    pending_messages[event.message.id] = event.message
+    waiting_messages[event.message.id] = event.message
     next
   else
     Message.generater(event, event.message.id, event.content)
@@ -31,7 +36,8 @@ end
 
 # メッセージの更新
 bot.message_update do |event|
-  if (message = pending_messages[event.message.id]) && !event.message.embeds.empty?
+  # 埋め込み待ちメッセージで、Embedが埋め込まれているか
+  if (message = waiting_messages[event.message.id]) && !event.message.embeds.empty?
     Message.generater(event, event.message.id, message.content)
   end
 end
@@ -64,7 +70,7 @@ bot.mention do |event|
       icon_url: bot.profile.avatar_url
     )
     embed.color = 0x1da1f2
-    embed.description = "画像つきツイートの2枚目以降の画像を表示するbotです"
+    embed.description = "画像つきツイートの2枚目以降の画像を表示するBOTです"
     embed.add_field(
       name: "**使い方**", 
       value: "画像が2枚以上含まれたツイートのURLをメッセージで送信してください"
@@ -82,17 +88,20 @@ bot.mention do |event|
       value: "NSFWチャンネルでのみ表示できます"
     )
     embed.add_field(
-      name: "**botをサーバーに招待したい**",
-      value: "botにダイレクトメッセージを送ってください"
+      name: "**BOTをサーバーに招待したい**",
+      value: "BOTにダイレクトメッセージを送ってください"
     )
   end
 end
 
 # ダイレクトメッセージ受け取り
 bot.pm do |event|
+  total_servers = Message.delimit(bot.servers.length)
+  total_users   = Message.delimit(bot.users.length)
   event << "メッセージありがとうございます。"
-  event << "このbotはTwitterの画像つきツイートのURLがテキストチャンネルに送信されたときに、2枚目以降の画像URLを自動で送信するbotです。"
-  event << "詳細な説明、botの招待方法は以下のリンクからご覧ください。"
+  event << "このBOTはTwitterの画像つきツイートのURLがテキストチャンネルに送信されたときに、2枚目以降の画像URLを自動で送信するBOTです。"
+  event << "現在**#{total_servers}**サーバー、**#{total_users}**ユーザーにご利用いただいています。"
+  event << "詳細な説明、BOTの招待方法は以下のリンクからご覧ください。"
   event << ENV['APP_README_URL']
 end
 

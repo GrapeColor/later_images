@@ -45,4 +45,10 @@ class Message
       event.drain
     end
   end
+
+  # 数字をカンマ区切りの文字列に
+  ## number = Integer
+  def self.delimit(number)
+    number.to_s.gsub(/(\d)(?=(\d{3})+(?!\d))/, '\1,')
+  end
 end
