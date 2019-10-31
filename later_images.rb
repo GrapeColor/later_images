@@ -30,7 +30,7 @@ bot.message({ contains: "://twitter.com/" }) do |event|
     waiting_messages[event.message.id] = event.message
     next
   else
-    Message.generater(event, event.message.id, event.content)
+    Message.generater(event, event.message)
   end
 end
 
@@ -38,7 +38,7 @@ end
 bot.message_update do |event|
   # 埋め込み待ちメッセージで、Embedが埋め込まれているか
   if (message = waiting_messages[event.message.id]) && !event.message.embeds.empty?
-    Message.generater(event, event.message.id, message.content)
+    Message.generater(event, message)
   end
 end
 
@@ -70,10 +70,10 @@ bot.mention do |event|
       icon_url: bot.profile.avatar_url
     )
     embed.color = 0x1da1f2
-    embed.description = "画像つきツイートの2枚目以降の画像を表示するBOTです"
+    embed.description = "画像つきツイートの全画像を表示するBOTです"
     embed.add_field(
       name: "**使い方**", 
-      value: "画像が2枚以上含まれたツイートのURLをメッセージで送信してください"
+      value: "画像が含まれたツイートのURLをメッセージで送信してください"
     )
     embed.add_field(
       name: "**画像を削除したいとき**",
@@ -99,8 +99,8 @@ bot.pm do |event|
   total_servers = Message.delimit(bot.servers.length)
   total_users   = Message.delimit(bot.users.length)
   event << "メッセージありがとうございます。"
-  event << "このBOTはTwitterの画像つきツイートのURLがテキストチャンネルに送信されたときに、2枚目以降の画像URLを自動で送信するBOTです。"
-  event << "現在**#{total_servers}**サーバー、**#{total_users}**ユーザーにご利用いただいています。"
+  event << "このBOTはTwitterの画像つきツイートのURLがテキストチャンネルに送信されたときに、ツイートに含まれる全画像のURLを自動で送信するBOTです。"
+  event << "現在 **#{total_servers}** サーバー、**#{total_users}** ユーザーの方にご利用いただいています。"
   event << "詳細な説明、BOTの招待方法は以下のリンクからご覧ください。"
   event << ENV['APP_README_URL']
 end
