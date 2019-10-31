@@ -59,7 +59,7 @@ class Message
     return if media.nil?
     
     # NSFWに適合するか
-    unless check_nsfw(event, tweet) || check_nsfw(event, quote)
+    unless check_nsfw(event, tweet) && check_nsfw(event, quote)
       event.send_temporary_message(NSFW_MESSAGE, TEMP_SECOND)
       return
     end
@@ -82,11 +82,9 @@ class Message
   # ツイート情報を取得
   def self.get_tweet(status)
     begin
-      tweet = @@client.status(status, { tweet_mode: "extended" })
+      @@client.status(status, { tweet_mode: "extended" })
     rescue
       return
-    else
-      tweet
     end
   end
 
@@ -100,14 +98,12 @@ class Message
 
   # NSFWに適合するか
   def self.check_nsfw(event, tweet)
-    return false if tweet.attrs[:possibly_sensitive] && !event.channel.nsfw?
-    true
+    !(tweet.attrs[:possibly_sensitive] && !event.channel.nsfw?)
   end
 
   # 削除範囲外か
   def self.check_range(event, message)
-    return false if event.channel.history(DELETE_RANGE, nil, message.id).length >= DELETE_RANGE
-    true
+    !(event.channel.history(DELETE_RANGE, nil, message.id).length >= DELETE_RANGE)
   end
 
   # 数字をカンマ区切りの文字列に
