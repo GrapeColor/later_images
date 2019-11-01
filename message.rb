@@ -98,12 +98,12 @@ class Message
 
   # NSFWに適合するか
   def self.check_nsfw(event, tweet)
-    !(tweet.attrs[:possibly_sensitive] && !event.channel.nsfw?)
+    !tweet.attrs[:possibly_sensitive] || event.channel.nsfw?
   end
 
   # 削除範囲外か
   def self.check_range(event, message)
-    !(event.channel.history(DELETE_RANGE, nil, message.id).length >= DELETE_RANGE)
+    event.channel.history(DELETE_RANGE, nil, message.id).length < DELETE_RANGE
   end
 
   # 数字をカンマ区切りの文字列に
