@@ -7,7 +7,7 @@ class Message
   TEMP_SECOND   = 20  # 一時メッセージ表示時間
 
   NSFW_MESSAGE = "**ツイートにセンシティブな内容が含まれる可能性があるため、表示できません（NSFWチャンネルでのみ表示可）**"
-  OVER_RANGE_MESSAGE = "BOTが応答するまでの間にチャンネルに既定以上のメッセージが送信されました"
+  OVER_RANGE_MESSAGE = "BOTが応答するまでの間にチャンネルに既定数以上のメッセージが送信されました"
 
   # Twitter APIクライアント初期化
   @@client = Twitter::REST::Client.new do |config|
@@ -65,7 +65,7 @@ class Message
     end
 
     # 引用ツイートURL挿入
-    event << "メッセージ(ID: #{message.id})の画像つき引用ツイート"
+    event << "メッセージ(ID: #{message.id})の引用ツイート画像"
     event << quote.uri.to_s
 
     # 画像が2枚以上あるか

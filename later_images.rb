@@ -73,7 +73,7 @@ bot.mention do |event|
     embed.description = "画像つきツイートの全画像を表示するBOTです"
     embed.add_field(
       name: "**使い方**", 
-      value: "画像が含まれたツイートのURLをメッセージで送信してください"
+      value: "画像つきツイートのURLをメッセージで送信してください"
     )
     embed.add_field(
       name: "**画像を削除したいとき**",
@@ -88,8 +88,8 @@ bot.mention do |event|
       value: "NSFWチャンネルでのみ表示できます"
     )
     embed.add_field(
-      name: "**BOTをサーバーに招待したい**",
-      value: "BOTにダイレクトメッセージを送ってください"
+      name: "**BOTを別のサーバーに招待したい**",
+      value: "BOT宛にダイレクトメッセージを送ってください"
     )
   end
 end
