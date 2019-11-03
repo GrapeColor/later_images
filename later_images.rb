@@ -1,4 +1,5 @@
 require 'bundler/setup'
+require 'logger'
 require 'dotenv'
 require 'discordrb'
 
@@ -6,6 +7,9 @@ Dotenv.load
 require './message'
 
 waiting_messages = {} # Embed埋め込み待ちメッセージ
+app_logger = Logger.new(STDOUT)
+request_counter = { members: 0, bots: 0, webhooks: 0 }
+last_log = Time.at(0)
 
 bot = Discordrb::Bot.new(
   name: "Later Images",
@@ -18,19 +22,42 @@ bot.ready { bot.game = "Twitter | @" + bot.profile.distinct }
 
 # ハートビートイベント
 bot.heartbeat do
-  # タイムアウトしたメッセージを破棄
   now = Time.now
+
+  # タイムアウトしたメッセージを破棄
   waiting_messages.delete_if { |id, message| now - message.timestamp > Message::EMBED_TIMEOUT }
+
+  # 1時間あたりのリクエスト数などのログ
+  if now - last_log > 3600
+    name = bot.profile.username
+    app_logger.info(name) { "Requested by Members: #{request_counter[:members]}, Bots: #{request_counter[:bots]}, Webhooks: #{request_counter[:webhooks]}" }
+    app_logger.info(name) { "Used by Servers: #{bot.servers.length}, Users: #{bot.users.length}" }
+    request_counter = { members: 0, bots: 0, webhooks: 0 }
+    last_log = now
+  end
 end
 
 # ツイートURLを含むメッセージの送信
 bot.message({ contains: "://twitter.com/" }) do |event|
+  message = event.message
+
   # Embedが埋め込まれているか
-  if event.message.embeds.empty?
-    waiting_messages[event.message.id] = event.message
-    next
+  if message.embeds.empty?
+    waiting_messages[message.id] = message
   else
-    Message.generater(event, event.message)
+    Message.generater(event, message)
+  end
+  
+  # リクエスト数カウンタ
+  user = event.author
+  if user.bot_account?
+    if user.webhook?
+      request_counter[:webhooks] += 1
+    else
+      request_counter[:bots] += 1
+    end
+  else
+    request_counter[:members] += 1
   end
 end
 
