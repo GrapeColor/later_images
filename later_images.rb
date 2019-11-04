@@ -12,7 +12,7 @@ waiting_messages = {} # Embed埋め込み待ちメッセージ
 $stdout.sync = true
 app_logger = Logger.new(STDOUT)
 request_counter = { members: 0, bots: 0, webhooks: 0 }
-last_log = Time.at(0)
+last_log = Time.now - 3600
 
 bot = Discordrb::Bot.new(
   name: "Later Images",
@@ -31,7 +31,7 @@ bot.heartbeat do
   waiting_messages.delete_if { |id, message| now - message.timestamp > Message::EMBED_TIMEOUT }
 
   # 1時間あたりのリクエスト数などのログ
-  if now - last_log > 3600
+  if last_log.hour < now.hour
     name = bot.profile.username
     app_logger.info(name) { "Requested by Members: #{request_counter[:members]}, Bots: #{request_counter[:bots]}, Webhooks: #{request_counter[:webhooks]}" }
     app_logger.info(name) { "Used by Servers: #{bot.servers.length}, Users: #{bot.users.length}" }
