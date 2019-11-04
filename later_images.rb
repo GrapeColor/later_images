@@ -12,7 +12,7 @@ waiting_messages = {} # Embed埋め込み待ちメッセージ
 $stdout.sync = true
 app_logger = Logger.new(STDOUT)
 request_counter = { members: 0, bots: 0, webhooks: 0 }
-last_log = Time.now - 3600
+last_log = Time.now
 
 bot = Discordrb::Bot.new(
   name: "Later Images",
