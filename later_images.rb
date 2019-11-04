@@ -31,10 +31,12 @@ bot.heartbeat do
   waiting_messages.delete_if { |id, message| now - message.timestamp > Message::EMBED_TIMEOUT }
 
   # 1時間あたりのリクエスト数などのログ
-  if last_log.hour < now.hour
+  if last_log.hour != now.hour
     name = bot.profile.username
     app_logger.info(name) { "Requested by Members: #{request_counter[:members]}, Bots: #{request_counter[:bots]}, Webhooks: #{request_counter[:webhooks]}" }
     app_logger.info(name) { "Used by Servers: #{bot.servers.length}, Users: #{bot.users.length}" }
+    app_logger.info(name) { "Between #{last_log} and #{now}" }
+    
     request_counter = { members: 0, bots: 0, webhooks: 0 }
     last_log = now
   end
