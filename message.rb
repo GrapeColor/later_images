@@ -32,8 +32,8 @@ class Message
     end
     return if media.empty?  # 画像が2枚以上あるか
 
-    # NSFWに適合するか
-    unless check_nsfw(event, tweet)
+    # NSFWか
+    if check_nsfw(event, tweet)
       event.send_temporary_message(NSFW_MESSAGE, TEMP_SECOND)
       return
     end
@@ -43,7 +43,7 @@ class Message
     media.each { |m| event << m.media_url_https }
 
     # 削除範囲外ではないか
-    unless check_range(event, message)
+    if check_over(event, message)
       event.send_temporary_message(OVER_RANGE_MESSAGE, TEMP_SECOND)
       event.drain
     end
@@ -58,8 +58,8 @@ class Message
     media = get_images(quote)
     return if media.nil?
     
-    # NSFWに適合するか
-    unless check_nsfw(event, tweet) && check_nsfw(event, quote)
+    # NSFWか
+    if check_nsfw(event, tweet) || check_nsfw(event, quote)
       event.send_temporary_message(NSFW_MESSAGE, TEMP_SECOND)
       return
     end
@@ -73,7 +73,7 @@ class Message
     media.each { |m| event << m.media_url_https }
 
     # 削除範囲外ではないか
-    unless check_range(event, message)
+    if check_over(event, message)
       event.send_temporary_message(OVER_RANGE_MESSAGE, TEMP_SECOND)
       event.drain
     end
@@ -98,12 +98,12 @@ class Message
 
   # NSFWに適合するか
   def self.check_nsfw(event, tweet)
-    !tweet.attrs[:possibly_sensitive] || event.channel.nsfw?
+    tweet.attrs[:possibly_sensitive] && !event.channel.nsfw?
   end
 
   # 削除範囲外か
-  def self.check_range(event, message)
-    event.channel.history(DELETE_RANGE, nil, message.id).length < DELETE_RANGE
+  def self.check_over(event, message)
+    event.channel.history(DELETE_RANGE, nil, message.id).length >= DELETE_RANGE
   end
 
   # 数字をカンマ区切りの文字列に

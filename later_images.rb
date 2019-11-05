@@ -35,8 +35,8 @@ bot.heartbeat do
     name = bot.profile.username
     app_logger.info(name) { "Requested by Members: #{request_counter[:members]}, Bots: #{request_counter[:bots]}, Webhooks: #{request_counter[:webhooks]}" }
     app_logger.info(name) { "Used by Servers: #{bot.servers.length}, Users: #{bot.users.length}" }
-    app_logger.info(name) { "Between #{last_log} and #{now}" }
-    
+    app_logger.info(name) { "After #{last_log}" }
+
     request_counter = { members: 0, bots: 0, webhooks: 0 }
     last_log = now
   end
@@ -44,19 +44,16 @@ end
 
 # ツイートURLを含むメッセージの送信
 bot.message({ contains: "://twitter.com/" }) do |event|
-  message = event.message
-
   # Embedが埋め込まれているか
-  if message.embeds.empty?
-    waiting_messages[message.id] = message
+  if event.message.embeds.empty?
+    waiting_messages[event.message.id] = message
   else
-    Message.generater(event, message)
+    Message.generater(event, event.message)
   end
-  
+
   # リクエスト数カウンタ
-  user = event.author
-  if user.bot_account?
-    if user.webhook?
+  if event.author.bot_account?
+    if event.author.webhook?
       request_counter[:webhooks] += 1
     else
       request_counter[:bots] += 1
