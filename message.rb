@@ -5,6 +5,7 @@ class Message
   EMBED_TIMEOUT = 30  # Embed埋め込み待機時間
   DELETE_RANGE  = 10  # 削除メッセージ検索範囲
   TEMP_SECOND   = 20  # 一時メッセージ表示時間
+  RATE_LIMIT    = 100 # 1時間当たりの上限リクエスト数
 
   NSFW_MESSAGE = "**ツイートにセンシティブな内容が含まれる可能性があるため、表示できません（NSFWチャンネルでのみ表示可）**"
   OVER_RANGE_MESSAGE = "BOTが応答するまでの間にチャンネルに既定数以上のメッセージが送信されました"

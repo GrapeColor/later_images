@@ -11,7 +11,8 @@ waiting_messages = {} # Embed埋め込み待ちメッセージ
 # ログ出力に必要な初期化
 $stdout.sync = true
 app_logger = Logger.new(STDOUT)
-request_counter = { members: 0, bots: 0, webhooks: 0 }
+requests = { members: 0, bots: 0, webhooks: 0 }
+by_users = {}
 last_log = Time.now
 
 bot = Discordrb::Bot.new(
@@ -33,34 +34,49 @@ bot.heartbeat do
   # 1時間あたりのリクエスト数などのログ
   if last_log.hour != now.hour
     name = bot.profile.username
-    app_logger.info(name) { "Requested by Members: #{request_counter[:members]}, Bots: #{request_counter[:bots]}, Webhooks: #{request_counter[:webhooks]}" }
+
+    by_users.each do |user_id, count|
+      if count > Message::RATE_LIMIT
+        bot.ignore_user(user_id)
+        app_logger.warn(name) { "Ignore User(#{user_id})" }
+      end
+    end
+
+    total = requests[:members] + requests[:bots] + requests[:webhooks]
+    app_logger.info(name) { "Requested by Members: #{requests[:members]}, Bots: #{requests[:bots]}, Webhooks: #{requests[:webhooks]}, Total: #{total}" }
     app_logger.info(name) { "Used by Servers: #{bot.servers.length}, Users: #{bot.users.length}" }
     app_logger.info(name) { "After #{last_log}" }
 
-    request_counter = { members: 0, bots: 0, webhooks: 0 }
+    requests = { members: 0, bots: 0, webhooks: 0 }
     last_log = now
   end
 end
 
 # ツイートURLを含むメッセージの送信
 bot.message({ contains: "://twitter.com/" }) do |event|
+  message = event.message
+
   # Embedが埋め込まれているか
-  if event.message.embeds.empty?
-    waiting_messages[event.message.id] = message
+  if message.embeds.empty?
+    waiting_messages[message.id] = message
   else
-    Message.generater(event, event.message)
+    Message.generater(event, message)
   end
 
   # リクエスト数カウンタ
-  if event.author.bot_account?
-    if event.author.webhook?
-      request_counter[:webhooks] += 1
+  user = event.author
+
+  if user.bot_account?
+    if user.webhook?
+      requests[:webhooks] += 1
     else
-      request_counter[:bots] += 1
+      requests[:bots] += 1
     end
   else
-    request_counter[:members] += 1
+    requests[:members] += 1
   end
+
+  by_users[user.id] = by_users[user.id].to_i + 1
 end
 
 # メッセージの更新
