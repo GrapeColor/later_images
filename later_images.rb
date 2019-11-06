@@ -11,8 +11,8 @@ waiting_messages = {} # Embed埋め込み待ちメッセージ
 # ログ出力に必要な初期化
 $stdout.sync = true
 app_logger = Logger.new(STDOUT)
-requests = { members: 0, bots: 0, webhooks: 0 }
 by_users = {}
+requests = { members: 0, bots: 0, webhooks: 0 }
 last_log = Time.now
 
 bot = Discordrb::Bot.new(
@@ -31,23 +31,26 @@ bot.heartbeat do
   # タイムアウトしたメッセージを破棄
   waiting_messages.delete_if { |id, message| now - message.timestamp > Message::EMBED_TIMEOUT }
 
-  # 1時間あたりのリクエスト数などのログ
+  # 1時間ごとのタスク
   if last_log.hour != now.hour
     name = bot.profile.username
 
+    # 既定値以上のリクエストをしたユーザーを除外
     by_users.each do |user_id, count|
       if count > Message::RATE_LIMIT
         bot.ignore_user(user_id)
         app_logger.warn(name) { "Ignore User(#{user_id})" }
       end
     end
+    by_users = {}
 
+    # BOTの使用状況をログ出力
     total = requests[:members] + requests[:bots] + requests[:webhooks]
     app_logger.info(name) { "Requested by Members: #{requests[:members]}, Bots: #{requests[:bots]}, Webhooks: #{requests[:webhooks]}, Total: #{total}" }
     app_logger.info(name) { "Used by Servers: #{bot.servers.length}, Users: #{bot.users.length}" }
     app_logger.info(name) { "After #{last_log}" }
-
     requests = { members: 0, bots: 0, webhooks: 0 }
+
     last_log = now
   end
 end
@@ -92,7 +95,7 @@ bot.message_delete do |event|
   # 削除メッセージ以降のメッセージを検索
   event.channel.history(Message::DELETE_RANGE, nil, event.id).each do |message|
     # bot自身のメッセージか
-    next if message.author != bot.profile.id
+    next unless message.from_bot?
 
     # メッセージIDはあるか
     match_reply = message.content.match(/(ID:|[\u{1f194}]|[\u27A1]|REPLY TO:) ([a-z0-9]+)/)
