@@ -6,13 +6,13 @@ require 'discordrb'
 Dotenv.load
 require './message'
 
-waiting_messages = {} # Embed埋め込み待ちメッセージ
+waitings = {} # Embed埋め込み待ちメッセージ
 
 # ログ出力に必要な初期化
 $stdout.sync = true
 app_logger = Logger.new(STDOUT)
-by_users = {}
 requests = { members: 0, bots: 0, webhooks: 0 }
+by_users = {}
 last_log = Time.now
 
 bot = Discordrb::Bot.new(
@@ -29,39 +29,33 @@ bot.heartbeat do
   now = Time.now
 
   # タイムアウトしたメッセージを破棄
-  waiting_messages.delete_if { |id, message| now - message.timestamp > Message::EMBED_TIMEOUT }
+  waitings.delete_if { |id, message| now - message.timestamp > Message::EMBED_TIMEOUT }
 
   # 1時間ごとのタスク
   if last_log.hour != now.hour
     name = bot.profile.username
 
-    # 既定値以上のリクエストをしたユーザーを除外
-    by_users.each do |user_id, count|
-      if count > Message::RATE_LIMIT
-        bot.ignore_user(user_id)
-        app_logger.warn(name) { "Ignore User(#{user_id})" }
-      end
-    end
-    by_users = {}
-
     # BOTの使用状況をログ出力
-    total = requests[:members] + requests[:bots] + requests[:webhooks]
+    total = requests.values.inject(:+)
     app_logger.info(name) { "Requested by Members: #{requests[:members]}, Bots: #{requests[:bots]}, Webhooks: #{requests[:webhooks]}, Total: #{total}" }
     app_logger.info(name) { "Used by Servers: #{bot.servers.length}, Users: #{bot.users.length}" }
     app_logger.info(name) { "After #{last_log}" }
+
+    # カウンタ初期化
     requests = { members: 0, bots: 0, webhooks: 0 }
+    by_users = {}
 
     last_log = now
   end
 end
 
 # ツイートURLを含むメッセージの送信
-bot.message({ contains: "://twitter.com/" }) do |event|
+bot.message({ contains: Message::URL_PATTERN }) do |event|
   message = event.message
 
   # Embedが埋め込まれているか
   if message.embeds.empty?
-    waiting_messages[message.id] = message
+    waitings[message.id] = message
   else
     Message.generater(event, message)
   end
@@ -79,13 +73,18 @@ bot.message({ contains: "://twitter.com/" }) do |event|
     requests[:members] += 1
   end
 
+  # レートリミッタ
   by_users[user.id] = by_users[user.id].to_i + 1
+  if by_users[user.id] > Message::RATE_LIMIT
+    bot.ignore_user(user.id)
+    app_logger.warn(bot.profile.username) { "Ignore User(#{user.id})" }
+  end
 end
 
 # メッセージの更新
 bot.message_update do |event|
   # 埋め込み待ちメッセージで、Embedが埋め込まれているか
-  if (message = waiting_messages[event.message.id]) && !event.message.embeds.empty?
+  if !event.message.embeds.empty? && message = waitings.delete(event.message.id)
     Message.generater(event, message)
   end
 end
@@ -104,13 +103,12 @@ bot.message_delete do |event|
     # 削除メッセージIDと一致するか
     if event.id == match_reply[2].to_i || event.id == match_reply[2].to_i(36)
       message.delete
-      break
     end
   end
 end
 
-# メンション受け取り
-bot.mention do |event|
+# 空メンション受け取り
+bot.mention({ content: /<@\d+>/ }) do |event|
   event.send_embed do |embed|
     embed.author = Discordrb::Webhooks::EmbedAuthor.new(
       name: bot.profile.username,
@@ -140,6 +138,12 @@ bot.mention do |event|
       value: "BOT宛にダイレクトメッセージを送ってください"
     )
   end
+end
+
+# pingメンション受け取り
+bot.mention({ content: /<@\d+> ping/ }) do |event|
+  message = event.send_message("計測中...")
+  message.edit("応答速度: #{((message.timestamp - event.timestamp) * 1000).round}ms")
 end
 
 # ダイレクトメッセージ受け取り

@@ -13,9 +13,8 @@ client = Twitter::REST::Client.new do |config|
 end
 
 bot.message do |event|
-  match_url = event.content.match(%r{https://twitter\.com/\w+/status/(\d+)})
-  next if match_url.nil?
-  media = client.status(match_url[1], { tweet_mode: "extended" }).media.dup
+  next if event.content !~ %r{https://twitter\.com/\w+/status/(\d+)}
+  media = client.status($1, { tweet_mode: "extended" }).media.dup
   next if media.length <= 1 || media[0].type != "photo"
   media.shift
   media.each { |m| event << m.media_url_https }

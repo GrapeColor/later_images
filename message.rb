@@ -5,7 +5,9 @@ class Message
   EMBED_TIMEOUT = 30  # Embed埋め込み待機時間
   DELETE_RANGE  = 10  # 削除メッセージ検索範囲
   TEMP_SECOND   = 20  # 一時メッセージ表示時間
-  RATE_LIMIT    = 100 # 1時間当たりの上限リクエスト数
+  RATE_LIMIT    = 120 # 1時間当たりの上限リクエスト数
+
+  URL_PATTERN = %r{(?<!!)https?://twitter\.com/\w+/status/(\d+)}
 
   NSFW_MESSAGE = "**ツイートにセンシティブな内容が含まれる可能性があるため、表示できません（NSFWチャンネルでのみ表示可）**"
   OVER_RANGE_MESSAGE = "BOTが応答するまでの間にチャンネルに既定数以上のメッセージが送信されました"
@@ -21,9 +23,8 @@ class Message
   # メッセージ生成
   def self.generater(event, message)
     # URLがマッチするか
-    match_url = message.content.match(%r{!?https?://twitter\.com/\w+/status/(\d+)})
-    return if match_url.nil? || match_url[0].start_with?("!")
-    return unless tweet = get_tweet(match_url[1])
+    return if message.content !~ URL_PATTERN
+    return unless tweet = get_tweet($1)
 
     # 画像つきツイートか
     media = get_images(tweet)
