@@ -107,7 +107,7 @@ bot.message_delete do |event|
 end
 
 # 空メンション受け取り
-bot.mention({ content: /<@\d+>/ }) do |event|
+bot.mention({ content: /<@!?\d+>/ }) do |event|
   event.send_embed do |embed|
     embed.author = Discordrb::Webhooks::EmbedAuthor.new(
       name: bot.profile.username,
@@ -140,7 +140,7 @@ bot.mention({ content: /<@\d+>/ }) do |event|
 end
 
 # pingメンション受け取り
-bot.mention({ content: /<@\d+> ping/ }) do |event|
+bot.mention({ content: /<@!?\d+> ping/ }) do |event|
   message = event.send_message("計測中...")
   message.edit("応答速度: #{((message.timestamp - event.timestamp) * 1000).round}ms")
 end
