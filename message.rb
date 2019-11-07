@@ -7,8 +7,6 @@ class Message
   TEMP_SECOND   = 20  # 一時メッセージ表示時間
   RATE_LIMIT    = 120 # 1時間当たりの上限リクエスト数
 
-  URL_PATTERN = %r{(?<!!)https?://twitter\.com/\w+/status/(\d+)}
-
   NSFW_MESSAGE = "**ツイートにセンシティブな内容が含まれる可能性があるため、表示できません（NSFWチャンネルでのみ表示可）**"
   OVER_RANGE_MESSAGE = "BOTが応答するまでの間にチャンネルに既定数以上のメッセージが送信されました"
 
@@ -21,15 +19,13 @@ class Message
   end
 
   # メッセージ生成
-  def self.generater(event, message)
-    # URLがマッチするか
-    return if message.content !~ URL_PATTERN
-    return unless tweet = get_tweet($1)
+  def self.generater(event, message_id, tweet_id)
+    return unless tweet = get_tweet(tweet_id)
 
     # 画像つきツイートか
     media = get_images(tweet)
     if media.nil?
-      expand_quote(event, message, tweet)
+      expand_quote(event, message_id, tweet)
       return
     end
     return if media.empty?  # 画像が2枚以上あるか
@@ -41,25 +37,25 @@ class Message
     end
 
     # メッセージID・画像URL挿入
-    event << "メッセージ(ID: #{message.id})のツイート画像"
+    event << "メッセージ(ID: #{message_id})のツイート画像"
     media.each { |m| event << m.media_url_https }
 
     # 削除範囲外ではないか
-    if check_over(event, message)
+    if check_over(event, message_id)
       event.send_temporary_message(OVER_RANGE_MESSAGE, TEMP_SECOND)
       event.drain
     end
   end
 
   # 画像つき引用ツイートの展開
-  def self.expand_quote(event, message, tweet)
+  def self.expand_quote(event, message_id, tweet)
     return unless tweet.attrs[:is_quote_status]
     return unless quote = get_tweet(tweet.attrs[:quoted_status_id])
     
     # 画像つきツイートか
     media = get_images(quote)
     return if media.nil?
-    
+
     # NSFWか
     if check_nsfw(event, tweet) || check_nsfw(event, quote)
       event.send_temporary_message(NSFW_MESSAGE, TEMP_SECOND)
@@ -67,7 +63,7 @@ class Message
     end
 
     # 引用ツイートURL挿入
-    event << "メッセージ(ID: #{message.id})の引用ツイート画像"
+    event << "メッセージ(ID: #{message_id})の引用ツイート画像"
     event << quote.uri.to_s
 
     # 画像が2枚以上あるか
@@ -75,7 +71,7 @@ class Message
     media.each { |m| event << m.media_url_https }
 
     # 削除範囲外ではないか
-    if check_over(event, message)
+    if check_over(event, message_id)
       event.send_temporary_message(OVER_RANGE_MESSAGE, TEMP_SECOND)
       event.drain
     end
@@ -104,8 +100,8 @@ class Message
   end
 
   # 削除範囲外か
-  def self.check_over(event, message)
-    event.channel.history(DELETE_RANGE, nil, message.id).length >= DELETE_RANGE
+  def self.check_over(event, message_id)
+    event.channel.history(DELETE_RANGE, nil, message_id).length >= DELETE_RANGE
   end
 
   # 数字をカンマ区切りの文字列に

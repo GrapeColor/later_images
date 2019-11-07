@@ -6,13 +6,14 @@ require 'discordrb'
 Dotenv.load
 require './message'
 
-waitings = {} # Embed埋め込み待ちメッセージ
+# Embed埋め込み待ちメッセージ
+waitings = {} # { message_id => [tweet_id, timestamp] }
 
 # ログ出力に必要な初期化
 $stdout.sync = true
 app_logger = Logger.new(STDOUT)
 requests = { members: 0, bots: 0, webhooks: 0 }
-by_users = {}
+by_users = {} # { user_id => count }
 last_log = Time.now
 
 bot = Discordrb::Bot.new(
@@ -29,13 +30,12 @@ bot.heartbeat do
   now = Time.now
 
   # タイムアウトしたメッセージを破棄
-  waitings.delete_if { |id, message| now - message.timestamp > Message::EMBED_TIMEOUT }
+  waitings.delete_if { |id, data| now - data[1] > Message::EMBED_TIMEOUT }
 
   # 1時間ごとのタスク
   if last_log.hour != now.hour
-    name = bot.profile.username
-
     # BOTの使用状況をログ出力
+    name = bot.profile.username
     total = requests.values.inject(:+)
     app_logger.info(name) { "Requested by Members: #{requests[:members]}, Bots: #{requests[:bots]}, Webhooks: #{requests[:webhooks]}, Total: #{total}" }
     app_logger.info(name) { "Used by Servers: #{bot.servers.length}, Users: #{bot.users.length}" }
@@ -49,26 +49,23 @@ bot.heartbeat do
   end
 end
 
-# ツイートURLを含むメッセージの送信
-bot.message({ contains: Message::URL_PATTERN }) do |event|
+# メッセージの送信
+bot.message do |event|
+  # ツイートURLにマッチするか
+  next if event.content !~ %r{(?<!!)https?://twitter\.com/\w+/status/(\d+)}
   message = event.message
 
   # Embedが埋め込まれているか
   if message.embeds.empty?
-    waitings[message.id] = message
+    waitings[message.id] = $1, message.timestamp
   else
-    Message.generater(event, message)
+    Message.generater(event, message.id, $1)
   end
 
   # リクエスト数カウンタ
   user = event.author
-
   if user.bot_account?
-    if user.webhook?
-      requests[:webhooks] += 1
-    else
-      requests[:bots] += 1
-    end
+    user.webhook? ? requests[:webhooks] += 1 : requests[:bots] += 1
   else
     requests[:members] += 1
   end
@@ -83,9 +80,11 @@ end
 
 # メッセージの更新
 bot.message_update do |event|
+  message = event.message
+
   # 埋め込み待ちメッセージで、Embedが埋め込まれているか
-  if !event.message.embeds.empty? && message = waitings.delete(event.message.id)
-    Message.generater(event, message)
+  if !message.embeds.empty? && tweet_id = waitings.delete(message.id)[0]
+    Message.generater(event, message.id, tweet_id)
   end
 end
 
