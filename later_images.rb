@@ -83,8 +83,8 @@ bot.message_update do |event|
   message = event.message
 
   # 埋め込み待ちメッセージで、Embedが埋め込まれているか
-  if !message.embeds.empty? && tweet_id = waitings.delete(message.id)[0]
-    Message.generater(event, message.id, tweet_id)
+  if !message.embeds.empty? && data = waitings.delete(message.id)
+    Message.generater(event, message.id, data[0])
   end
 end
 
