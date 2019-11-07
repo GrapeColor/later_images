@@ -14,10 +14,9 @@ end
 
 bot.message do |event|
   next if event.content !~ %r{https://twitter\.com/\w+/status/(\d+)}
-  media = client.status($1, { tweet_mode: "extended" }).media.dup
-  next if media.length <= 1 || media[0].type != "photo"
-  media.shift
-  media.each { |m| event << m.media_url_https }
+  next if (media = client.status($1, { tweet_mode: "extended" }).media).empty?
+  next if media[0].type != "photo"
+  media[1..-1].each { |m| event << m.media_url_https }
 end
 
 bot.run
