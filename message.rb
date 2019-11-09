@@ -4,14 +4,14 @@ class Message
   # 定数初期化
   EMBED_TIMEOUT = 30  # Embed埋め込み待機時間
   DELETE_RANGE  = 10  # 削除メッセージ検索範囲
-  TEMP_SECOND   = 20  # 一時メッセージ表示時間
+  TEMP_SECOND   = 15  # 一時メッセージ表示時間
   RATE_LIMIT    = 120 # 1時間当たりの上限リクエスト数
 
   NSFW_MESSAGE = "**ツイートにセンシティブな内容が含まれる可能性があるため、表示できません（NSFWチャンネルでのみ表示可）**"
   OVER_RANGE_MESSAGE = "BOTが応答するまでの間にチャンネルに既定数以上のメッセージが送信されました"
 
   # Twitter APIクライアント初期化
-  @@client = Twitter::REST::Client.new do |config|
+  @client = Twitter::REST::Client.new do |config|
     config.consumer_key        = ENV['TWITTER_CONSUMER_KEY']
     config.consumer_secret     = ENV['TWITTER_CONSUMER_SECRET']
     config.access_token        = ENV['TWITTER_ACCESS_TOKEN']
@@ -19,59 +19,32 @@ class Message
   end
 
   # メッセージ生成
-  def self.generater(event, message_id, tweet_id)
+  def self.generater(event, message_id, tweet_id, quote = false)
     return unless tweet = get_tweet(tweet_id)
 
     # 画像つきツイートか
     media = get_images(tweet)
     if media.nil?
-      expand_quote(event, message_id, tweet)
+      if !quote && tweet.attrs[:is_quote_status]
+        generater(event, message_id, tweet.attrs[:quoted_status_id], true)
+      end
       return
     end
-    return if media.empty?  # 画像が2枚以上あるか
+    return if media.empty? && !quote  # 画像が2枚以上あるか
 
-    # NSFWか
-    if check_nsfw(event, tweet)
+    # NSFWに適合するか
+    if !event.channel.nsfw? && tweet.attrs[:possibly_sensitive]
       event.send_temporary_message(NSFW_MESSAGE, TEMP_SECOND)
       return
     end
 
     # メッセージID・画像URL挿入
-    event << "メッセージ(ID: #{message_id})のツイート画像"
+    event << "メッセージ(ID: #{message_id})の#{"引用" if quote}ツイート画像"
+    event << tweet.uri.to_s if quote
     media.each { |m| event << m.media_url_https }
 
     # 削除範囲外ではないか
-    if check_over(event, message_id)
-      event.send_temporary_message(OVER_RANGE_MESSAGE, TEMP_SECOND)
-      event.drain
-    end
-  end
-
-  # 画像つき引用ツイートの展開
-  def self.expand_quote(event, message_id, tweet)
-    return unless tweet.attrs[:is_quote_status]
-    return unless quote = get_tweet(tweet.attrs[:quoted_status_id])
-    
-    # 画像つきツイートか
-    media = get_images(quote)
-    return if media.nil?
-
-    # NSFWか
-    if check_nsfw(event, tweet) || check_nsfw(event, quote)
-      event.send_temporary_message(NSFW_MESSAGE, TEMP_SECOND)
-      return
-    end
-
-    # 引用ツイートURL挿入
-    event << "メッセージ(ID: #{message_id})の引用ツイート画像"
-    event << quote.uri.to_s
-
-    # 画像が2枚以上あるか
-    return if media.empty?
-    media.each { |m| event << m.media_url_https }
-
-    # 削除範囲外ではないか
-    if check_over(event, message_id)
+    if event.channel.history(DELETE_RANGE, nil, message_id).length >= DELETE_RANGE
       event.send_temporary_message(OVER_RANGE_MESSAGE, TEMP_SECOND)
       event.drain
     end
@@ -80,28 +53,15 @@ class Message
   # ツイート情報を取得
   def self.get_tweet(status)
     begin
-      @@client.status(status, { tweet_mode: "extended" })
-    rescue
-      return
-    end
+      @client.status(status, { tweet_mode: "extended" })
+    rescue; return; end
   end
 
   # ツイート画像を取得
   def self.get_images(tweet)
-    media = tweet.media.dup
+    media = tweet.media
     return if media.empty? || media[0].type != "photo"
-    media.shift # 1枚目の画像URLを破棄
-    media
-  end
-
-  # NSFWに適合するか
-  def self.check_nsfw(event, tweet)
-    tweet.attrs[:possibly_sensitive] && !event.channel.nsfw?
-  end
-
-  # 削除範囲外か
-  def self.check_over(event, message_id)
-    event.channel.history(DELETE_RANGE, nil, message_id).length >= DELETE_RANGE
+    media[1..-1]
   end
 
   # 数字をカンマ区切りの文字列に

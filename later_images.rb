@@ -7,7 +7,7 @@ Dotenv.load
 require './message'
 
 # Embed埋め込み待ちメッセージ
-waitings = {} # { message_id => [tweet_id, timestamp] }
+waitings = {} # { message_id => { :tweet_id, :timestamp } }
 
 # ログ出力に必要な初期化
 $stdout.sync = true
@@ -30,7 +30,7 @@ bot.heartbeat do
   now = Time.now
 
   # タイムアウトしたメッセージを破棄
-  waitings.delete_if { |id, data| now - data[1] > Message::EMBED_TIMEOUT }
+  waitings.delete_if { |id, data| now - data[:timestamp] > Message::EMBED_TIMEOUT }
 
   # 1時間ごとのタスク
   if last_log.hour != now.hour
@@ -57,7 +57,7 @@ bot.message do |event|
 
   # Embedが埋め込まれているか
   if message.embeds.empty?
-    waitings[message.id] = $1, message.timestamp
+    waitings[message.id] = { tweet_id: $1, timestamp: message.timestamp }
   else
     Message.generater(event, message.id, $1)
   end
@@ -84,7 +84,7 @@ bot.message_update do |event|
 
   # 埋め込み待ちメッセージで、Embedが埋め込まれているか
   if !message.embeds.empty? && data = waitings.delete(message.id)
-    Message.generater(event, message.id, data[0])
+    Message.generater(event, message.id, data[:tweet_id])
   end
 end
 
