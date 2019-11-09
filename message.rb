@@ -46,8 +46,10 @@ class Message
     # 削除範囲外ではないか
     if event.channel.history(DELETE_RANGE, nil, message_id).length >= DELETE_RANGE
       event.send_temporary_message(OVER_RANGE_MESSAGE, TEMP_SECOND)
-      event.drain
+    else
+      event.send_message(event.saved_message)
     end
+    event.drain
   end
 
   # ツイート情報を取得
