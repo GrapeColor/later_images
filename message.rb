@@ -52,6 +52,14 @@ class Message
     event.drain
   end
 
+  # メッセージのリプライ先IDを取得
+  def self.get_reply_id(message)
+    return unless message.from_bot?
+    return if message.content !~ /(ID:|[\u{1f194}]|[\u27A1]|REPLY TO:) ([a-z0-9]+)/
+    return $2.to_i(36) if $1 != "ID:"
+    $2.to_i
+  end
+
   # ツイート情報を取得
   def self.get_tweet(status)
     begin

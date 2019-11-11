@@ -72,7 +72,7 @@ bot.message do |event|
 
   # レートリミッタ
   by_users[user.id] = by_users[user.id].to_i + 1
-  if by_users[user.id] > Message::RATE_LIMIT
+  if by_users[user.id] >= Message::RATE_LIMIT
     bot.ignore_user(user.id)
     app_logger.warn(bot.profile.username) { "Ignore User(#{user.id})" }
   end
@@ -92,57 +92,56 @@ end
 bot.message_delete do |event|
   # 削除メッセージ以降のメッセージを検索
   event.channel.history(Message::DELETE_RANGE, nil, event.id).each do |message|
-    # bot自身のメッセージか
-    next unless message.from_bot?
-
-    # メッセージIDはあるか
-    match_reply = message.content.match(/(ID:|[\u{1f194}]|[\u27A1]|REPLY TO:) ([a-z0-9]+)/)
-    next if match_reply.nil?
-
-    # 削除メッセージIDと一致するか
-    if event.id == match_reply[2].to_i || event.id == match_reply[2].to_i(36)
-      message.delete
-    end
+    message.delete if event.id == Message.get_reply_id(message)
   end
 end
 
 # 空メンション受け取り
-bot.mention({ content: /<@!?\d+>/ }) do |event|
-  event.send_embed do |embed|
-    embed.author = Discordrb::Webhooks::EmbedAuthor.new(
-      name: bot.profile.username,
-      url: ENV['APP_URL'],
-      icon_url: bot.profile.avatar_url
-    )
-    embed.color = 0x1da1f2
-    embed.description = "画像つきツイートの全画像を表示するBOTです"
-    embed.add_field(
-      name: "**使い方**", 
-      value: "画像つきツイートのURLをメッセージで送信してください"
-    )
-    embed.add_field(
-      name: "**画像を削除したいとき**",
-      value: "ツイートのURLを含むメッセージを削除してください"
-    )
-    embed.add_field(
-      name: "**画像を表示して欲しくないとき**",
-      value: "URLの先頭に「!」を付けるか、URL自体を装飾してください"
-    )
-    embed.add_field(
-      name: "**センシティブコンテンツを含むツイート**",
-      value: "NSFWチャンネルでのみ表示できます"
-    )
-    embed.add_field(
-      name: "**BOTを別のサーバーに招待したい**",
-      value: "BOT宛にダイレクトメッセージを送ってください"
-    )
-  end
-end
+bot.mention do |event|
+  parse = event.content.match(/<@!?\d+> ?(.*)/)
 
-# pingメンション受け取り
-bot.mention({ content: /<@!?\d+> ping/ }) do |event|
-  message = event.send_message("計測中...")
-  message.edit("応答速度: #{((message.timestamp - event.timestamp) * 1000).round}ms")
+  case parse[1]
+  when /\d+/  # メッセージ削除済み確認
+    next unless message = event.channel.load_message($&.to_i)
+    next unless reply_id = Message.get_reply_id(message)
+    next if event.channel.load_message(reply_id)
+    message.delete
+
+  when "ping" # ping測定
+    message = event.send_message("計測中...")
+    message.edit("応答速度: #{((message.timestamp - event.timestamp) * 1000).round}ms")
+
+  else  # BOTの使用方法を返す
+    event.send_embed do |embed|
+      embed.author = Discordrb::Webhooks::EmbedAuthor.new(
+        name: bot.profile.username,
+        url: ENV['APP_URL'],
+        icon_url: bot.profile.avatar_url
+      )
+      embed.color = 0x1da1f2
+      embed.description = "画像つきツイートの全画像を表示するBOTです"
+      embed.add_field(
+        name: "**使い方**", 
+        value: "画像つきツイートのURLをメッセージで送信してください"
+      )
+      embed.add_field(
+        name: "**画像を削除したいとき**",
+        value: "ツイートのURLを含むメッセージを削除してください"
+      )
+      embed.add_field(
+        name: "**画像を表示して欲しくないとき**",
+        value: "URLの先頭に「!」を付けるか、URL自体を装飾してください"
+      )
+      embed.add_field(
+        name: "**センシティブコンテンツを含むツイート**",
+        value: "NSFWチャンネルでのみ表示できます"
+      )
+      embed.add_field(
+        name: "**BOTを別のサーバーに招待したい**",
+        value: "BOT宛にダイレクトメッセージを送ってください"
+      )
+    end
+  end
 end
 
 # ダイレクトメッセージ受け取り
