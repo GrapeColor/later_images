@@ -98,9 +98,9 @@ end
 
 # 空メンション受け取り
 bot.mention do |event|
-  parse = event.content.match(/<@!?\d+> ?(.*)/)
+  next if event.content !~ /^<@!?\d+> ?(.*)/
 
-  case parse[1]
+  case $1
   when /\d+/  # メッセージ削除済み確認
     next unless message = event.channel.load_message($&.to_i)
     next unless reply_id = Message.get_reply_id(message)
@@ -112,13 +112,19 @@ bot.mention do |event|
     message.edit("応答速度: #{((message.timestamp - event.timestamp) * 1000).round}ms")
 
   else  # BOTの使用方法を返す
+    today = Time.now
     event.send_embed do |embed|
+      embed.color = 0x1da1f2
+      embed.color = 0x316745 if today.month == 1  && today.day == 1
+      embed.color = 0x762e05 if today.month == 2  && today.day == 14
+      embed.color = 0xe5a323 if today.month == 10 && today.day == 31
+      embed.color = 0xe60033 if today.month == 12 && today.day == 25
+
       embed.author = Discordrb::Webhooks::EmbedAuthor.new(
         name: bot.profile.username,
         url: ENV['APP_URL'],
         icon_url: bot.profile.avatar_url
       )
-      embed.color = 0x1da1f2
       embed.description = "画像つきツイートの全画像を表示するBOTです"
       embed.add_field(
         name: "**使い方**", 
@@ -138,7 +144,11 @@ bot.mention do |event|
       )
       embed.add_field(
         name: "**BOTを別のサーバーに招待したい**",
-        value: "BOT宛にダイレクトメッセージを送ってください"
+        value: "BOT宛に何かダイレクトメッセージを送ってください"
+      )
+      embed.add_field(
+        name: "**詳しい使用方法**",
+        value: ENV['APP_README_URL']
       )
     end
   end
