@@ -9,7 +9,7 @@ require './message'
 # Embed埋め込み待ちメッセージ
 waitings = {} # { message_id => { :tweet_id, :timestamp } }
 
-# ログ出力に必要な初期化
+# ログ出力関連の変数を初期化
 $stdout.sync = true
 app_logger = Logger.new(STDOUT)
 requests = { members: 0, bots: 0, webhooks: 0 }
@@ -17,7 +17,6 @@ by_users = {} # { user_id => count }
 last_log = Time.now
 
 bot = Discordrb::Bot.new(
-  name: "Later Images",
   client_id: ENV['DISCORD_CLIENT_ID'],
   token: ENV['DISCORD_TOKEN']
 )
@@ -59,7 +58,7 @@ bot.message do |event|
   if message.embeds.empty?
     waitings[message.id] = { tweet_id: $1, timestamp: message.timestamp }
   else
-    Message.generater(event, message.id, $1)
+    Message.generater(event, $1)
   end
 
   # リクエスト数カウンタ
@@ -84,7 +83,7 @@ bot.message_update do |event|
 
   # 埋め込み待ちメッセージで、Embedが埋め込まれているか
   if !message.embeds.empty? && data = waitings.delete(message.id)
-    Message.generater(event, message.id, data[:tweet_id])
+    Message.generater(event, data[:tweet_id])
   end
 end
 
@@ -113,6 +112,8 @@ bot.mention do |event|
 
   else  # BOTの使用方法を返す
     today = Time.now
+    name = event.server.member(bot.profile.id).display_name
+    
     event.send_embed do |embed|
       embed.color = 0x1da1f2
       embed.color = 0x316745 if today.month == 1  && today.day == 1
@@ -120,36 +121,29 @@ bot.mention do |event|
       embed.color = 0xe5a323 if today.month == 10 && today.day == 31
       embed.color = 0xe60033 if today.month == 12 && today.day == 25
 
-      embed.author = Discordrb::Webhooks::EmbedAuthor.new(
-        name: bot.profile.username,
-        url: ENV['APP_URL'],
-        icon_url: bot.profile.avatar_url
-      )
-      embed.description = "画像つきツイートの全画像を表示するBOTです"
-      embed.add_field(
-        name: "**使い方**", 
-        value: "画像つきツイートのURLをメッセージで送信してください"
-      )
-      embed.add_field(
-        name: "**画像を削除したいとき**",
-        value: "ツイートのURLを含むメッセージを削除してください"
-      )
-      embed.add_field(
-        name: "**画像を表示して欲しくないとき**",
-        value: "URLの先頭に「!」を付けるか、URL自体を装飾してください"
-      )
-      embed.add_field(
-        name: "**センシティブコンテンツを含むツイート**",
-        value: "NSFWチャンネルでのみ表示できます"
-      )
-      embed.add_field(
-        name: "**BOTを別のサーバーに招待したい**",
-        value: "BOT宛に何かダイレクトメッセージを送ってください"
-      )
-      embed.add_field(
-        name: "**詳しい使用方法**",
-        value: ENV['APP_README_URL']
-      )
+      embed.title = "#{name} の使い方"
+      embed.description = <<DESC
+画像つきツイートの全画像を表示するBOTです
+  
+**■ 使い方**
+画像つきツイートのURLをメッセージで送信してください
+  
+**■ 画像を削除したいとき**
+ツイートのURLを含むメッセージを削除してください
+  
+**■ 画像を表示して欲しくないとき**
+URLの先頭に「!」を付けるか、URL自体を装飾してください
+  
+**■ センシティブコンテンツを含むツイート**
+NSFWチャンネルでのみ表示できます
+  
+**■ BOTを別のサーバーに招待したい**
+BOT宛に何かダイレクトメッセージを送ってください
+  
+**■ 詳しい使用方法**
+#{ENV['APP_README_URL']}
+DESC
+      embed.footer = Discordrb::Webhooks::EmbedFooter.new(text: "Created by GrapeColor.")
     end
   end
 end

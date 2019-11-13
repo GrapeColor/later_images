@@ -19,14 +19,15 @@ class Message
   end
 
   # メッセージ生成
-  def self.generater(event, message_id, tweet_id, quote = false)
+  def self.generater(event, tweet_id, quote = false)
     return unless tweet = get_tweet(tweet_id)
+    message = event.message
 
     # 画像つきツイートか
     media = get_images(tweet)
     if media.nil?
       if !quote && tweet.attrs[:is_quote_status]
-        generater(event, message_id, tweet.attrs[:quoted_status_id], true)
+        generater(event, tweet.attrs[:quoted_status_id], true)
       end
       return
     end
@@ -39,12 +40,12 @@ class Message
     end
 
     # メッセージID・画像URL挿入
-    event << "メッセージ(ID: #{message_id})の#{"引用" if quote}ツイート画像"
+    event << "メッセージ(ID: #{message.id})の#{"引用" if quote}ツイート画像"
     event << tweet.uri.to_s if quote
     media.each { |m| event << m.media_url_https }
 
     # 削除範囲外ではないか
-    if event.channel.history(DELETE_RANGE, nil, message_id).length >= DELETE_RANGE
+    if event.channel.history(DELETE_RANGE, nil, message.id).length >= DELETE_RANGE
       event.send_temporary_message(OVER_RANGE_MESSAGE, TEMP_SECOND)
     else
       event.send_message(event.saved_message)
