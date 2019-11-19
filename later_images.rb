@@ -58,6 +58,7 @@ bot.mention do |event|
 
 **■ 残った画像を削除する方法**
 <@#{bot.profile.id}> に続いて残った画像のメッセージIDを付けて送信してください
+例: `@#{bot.profile.distinct} 646261660679405570`
 DESC
       embed.footer = Discordrb::Webhooks::EmbedFooter.new(text: "Created by GrapeColor.")
     end
