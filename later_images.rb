@@ -1,91 +1,14 @@
 require 'bundler/setup'
-require 'logger'
 require 'dotenv'
 require 'discordrb'
 
 Dotenv.load
 require './message'
 
-# Embed埋め込み待ちメッセージ
-waitings = {} # { message_id => { :tweet_id, :timestamp } }
-
-# ログ出力関連の変数を初期化
-$stdout.sync = true
-app_logger = Logger.new(STDOUT)
-requests = { members: 0, bots: 0, webhooks: 0 }
-by_users = {} # { user_id => count }
-last_log = Time.now
-
-bot = Discordrb::Bot.new(
-  client_id: ENV['DISCORD_CLIENT_ID'],
-  token: ENV['DISCORD_TOKEN']
-)
+bot = Discordrb::Bot.new(token: ENV['DISCORD_TOKEN'])
 
 # ステータス表示を設定
-bot.ready { bot.game = "Twitter | @" + bot.profile.distinct }
-
-# ハートビートイベント
-bot.heartbeat do
-  now = Time.now
-
-  # タイムアウトしたメッセージを破棄
-  waitings.delete_if { |id, data| now - data[:timestamp] > Message::EMBED_TIMEOUT }
-
-  # 1時間ごとのタスク
-  if last_log.hour != now.hour
-    # BOTの使用状況をログ出力
-    name = bot.profile.username
-    total = requests.values.inject(:+)
-    app_logger.info(name) { "Requested by Members: #{requests[:members]}, Bots: #{requests[:bots]}, Webhooks: #{requests[:webhooks]}, Total: #{total}" }
-    app_logger.info(name) { "Used by Servers: #{bot.servers.length}, Users: #{bot.users.length}" }
-    app_logger.info(name) { "After #{last_log}" }
-
-    # カウンタ初期化
-    requests = { members: 0, bots: 0, webhooks: 0 }
-    by_users = {}
-
-    last_log = now
-  end
-end
-
-# メッセージの送信
-bot.message do |event|
-  # ツイートURLにマッチするか
-  next if event.content !~ %r{(?<!!)https?://twitter\.com/\w+/status/(\d+)}
-  message = event.message
-
-  # Embedが埋め込まれているか
-  if message.embeds.empty?
-    waitings[message.id] = { tweet_id: $1, timestamp: message.timestamp }
-  else
-    Message.generater(event, $1)
-  end
-
-  # リクエスト数カウンタ
-  user = event.author
-  if user.bot_account?
-    user.webhook? ? requests[:webhooks] += 1 : requests[:bots] += 1
-  else
-    requests[:members] += 1
-  end
-
-  # レートリミッタ
-  by_users[user.id] = by_users[user.id].to_i + 1
-  if by_users[user.id] >= Message::RATE_LIMIT
-    bot.ignore_user(user.id)
-    app_logger.warn(bot.profile.username) { "Ignore User(#{user.id})" }
-  end
-end
-
-# メッセージの更新
-bot.message_update do |event|
-  message = event.message
-
-  # 埋め込み待ちメッセージで、Embedが埋め込まれているか
-  if !message.embeds.empty? && data = waitings.delete(message.id)
-    Message.generater(event, data[:tweet_id])
-  end
-end
+bot.ready { bot.game = "@" + bot.profile.distinct }
 
 # メッセージの削除
 bot.message_delete do |event|
@@ -124,39 +47,21 @@ bot.mention do |event|
       embed.title = "#{name} の使い方"
       embed.description = <<DESC
 画像つきツイートの全画像を表示するBOTです
-  
-**■ 使い方**
-画像つきツイートのURLをメッセージで送信してください
-  
-**■ 画像を削除したいとき**
+
+**■ お知らせ**
+このBOTはDiscordの仕様変更に伴い、画像表示機能の提供を終了させて頂きました。
+2019年いっぱいは削除機能のみ引き続き提供させて頂きます。
+ご利用ありがとうございました。
+
+**■ 画像を削除する方法**
 ツイートのURLを含むメッセージを削除してください
-  
-**■ 画像を表示して欲しくないとき**
-URLの先頭に「!」を付けるか、URL自体を装飾してください
-  
-**■ センシティブコンテンツを含むツイート**
-NSFWチャンネルでのみ表示できます
-  
-**■ BOTを別のサーバーに招待したい**
-BOT宛に何かダイレクトメッセージを送ってください
-  
-**■ 詳しい使用方法**
-#{ENV['APP_README_URL']}
+
+**■ 残った画像を削除する方法**
+<@#{bot.profile.id}> に続いて残った画像のメッセージIDを付けて送信してください
 DESC
       embed.footer = Discordrb::Webhooks::EmbedFooter.new(text: "Created by GrapeColor.")
     end
   end
-end
-
-# ダイレクトメッセージ受け取り
-bot.pm do |event|
-  total_servers = Message.delimit(bot.servers.length)
-  total_users   = Message.delimit(bot.users.length)
-  event << "メッセージありがとうございます。"
-  event << "このBOTはTwitterの画像つきツイートのURLがテキストチャンネルに送信されたときに、ツイートに含まれる全画像のURLを自動で送信するBOTです。"
-  event << "現在 **#{total_servers}** サーバー、**#{total_users}** ユーザーの方にご利用いただいています。"
-  event << "詳細な説明、BOTの招待方法は以下のリンクからご覧ください。"
-  event << ENV['APP_README_URL']
 end
 
 bot.run
