@@ -4,6 +4,5 @@ source "https://rubygems.org"
 
 git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
 
-gem 'discordrb', github: 'discordrb/discordrb', ref: '3290457'
+gem 'discordrb'
 gem 'dotenv'
-gem 'twitter'
