@@ -26,8 +26,8 @@ bot.mention do |event|
   when /\d+/  # メッセージ削除済み確認
     next unless message = event.channel.load_message($&.to_i)
     next unless reply_id = Message.get_reply_id(message)
-    next if event.channel.load_message(reply_id)
-    message.delete
+    origin = event.channel.load_message(reply_id)
+    message.delete unless origin && event.message.author.id != origin.author.id
 
   when "ping" # ping測定
     message = event.send_message("計測中...")
