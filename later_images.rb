@@ -54,19 +54,19 @@ class LaterImages
           
           embed.title = "#{event.server.member(@bot.profile.id).display_name} の使い方"
           embed.description = <<DESC
-          画像つきツイートの全画像を表示するBOTです
-          
-          **■ お知らせ**
-          このBOTはDiscordの仕様変更に伴い、画像表示機能の提供を終了させて頂きました。
-          2019年中は削除機能のみ引き続き提供させて頂きます。
-          ご利用ありがとうございました。
-          
-          **■ 画像を削除する方法**
-          ツイートのURLを含むメッセージを削除してください
-          
-          **■ 残った画像を削除する方法**
-          `@#{@bot.profile.distinct}` に続いて残った画像のメッセージIDを付けて送信してください
-          例: `@#{@bot.profile.distinct} 646261660679405570`
+画像つきツイートの全画像を表示するBOTです
+  
+**■ お知らせ**
+このBOTはDiscordの仕様変更に伴い、画像表示機能の提供を終了させて頂きました。
+2019年中は削除機能のみ引き続き提供させて頂きます。
+ご利用ありがとうございました。
+  
+**■ 画像を削除する方法**
+ツイートのURLを含むメッセージを削除してください
+  
+**■ 残った画像を削除する方法**
+`@#{@bot.profile.distinct}` に続いて残った画像のメッセージIDを付けて送信してください
+例: `@#{@bot.profile.distinct} 646261660679405570`
 DESC
           embed.footer = Discordrb::Webhooks::EmbedFooter.new(text: "Created by GrapeColor.")
         end
