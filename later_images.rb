@@ -44,6 +44,13 @@ class LaterImages
       when "ping" # ping測定
         message = event.send_message("計測中...")
         message.edit("応答速度: #{((message.timestamp - event.timestamp) * 1000).round}ms")
+
+      when "nsfw?" # nsfw判定
+        if event.channel.nsfw?
+          event.send_message("このページはNSFWです。")
+        else
+          event.send_message("このページはNSFWではありません。")
+        end
         
       else  # BOTの使用方法を返す
         event.send_embed do |embed|
