@@ -1,9 +1,8 @@
-require 'dotenv'
+require 'dotenv/load'
 require 'discordrb'
 require 'twitter'
 
-Dotenv.load
-bot = Discordrb::Bot.new(client_id: ENV['DISCORD_CLIENT_ID'], token: ENV['DISCORD_TOKEN'])
+bot = Discordrb::Bot.new(token: ENV['DISCORD_TOKEN'])
 
 client = Twitter::REST::Client.new do |config|
   config.consumer_key        = ENV['TWITTER_CONSUMER_KEY']
@@ -14,9 +13,10 @@ end
 
 bot.message do |event|
   next if event.content !~ %r{https://twitter\.com/\w+/status/(\d+)}
-  next if (media = client.status($1, { tweet_mode: "extended" }).media).empty?
-  next if media[0].type != "photo"
-  media[1..-1].each { |m| event << m.media_url_https }
+  tweet = client.status($1, { tweet_mode: "extended" })
+  next if tweet.media.empty?
+  next if tweet.media[0].type != "photo"
+  tweet.media[1..].map(&:media_url_https).join("\n")
 end
 
 bot.run
