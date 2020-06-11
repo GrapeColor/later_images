@@ -13,9 +13,9 @@ end
 
 bot.message do |event|
   next if event.content !~ %r{https://twitter\.com/\w+/status/(\d+)}
-  media = client.status($1, { tweet_mode: "extended" }).media
+  media = client.status($1, { tweet_mode: "extended" }).media rescue return nil
   next if media[0]&.type != "photo"
-  media[1..].map(&:media_url_https).join("\n")
+  media[1..].map(&:media_url_https) * "\n"
 end
 
 bot.run
